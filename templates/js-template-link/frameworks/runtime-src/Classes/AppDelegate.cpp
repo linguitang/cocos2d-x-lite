@@ -34,6 +34,9 @@
 #include "cocos/scripting/js-bindings/manual/jsb_classtype.hpp"
 
 USING_NS_CC;
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+#include "bugly/CrashReport.h"
+#endif
 
 AppDelegate::AppDelegate(int width, int height) : Application("Cocos Game", width, height)
 {
@@ -45,9 +48,15 @@ AppDelegate::~AppDelegate()
 
 bool AppDelegate::applicationDidFinishLaunching()
 {
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+    CrashReport::initCrashReport("098524a1fe", false);
+#elif (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+    CrashReport::initCrashReport("dd26a67238", false);
+#endif
+
     se::ScriptEngine *se = se::ScriptEngine::getInstance();
     
-    jsb_set_xxtea_key("");
+    jsb_set_xxtea_key("dfbdsd9-ndsc-qx8");
     jsb_init_file_operation_delegate();
     
 #if defined(COCOS2D_DEBUG) && (COCOS2D_DEBUG > 0)
@@ -57,6 +66,7 @@ bool AppDelegate::applicationDidFinishLaunching()
     
     se->setExceptionCallback([](const char *location, const char *message, const char *stack) {
         // Send exception information to server like Tencent Bugly.
+        CrashReport::reportException(CATEGORY_JS_EXCEPTION,  "JSException", message, stack);
     });
     
     jsb_register_all_modules();

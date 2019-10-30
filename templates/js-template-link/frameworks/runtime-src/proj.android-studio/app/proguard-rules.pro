@@ -42,3 +42,6 @@
 # keep anysdk for release. you can comment if you are not using anysdk
 -keep public class com.anysdk.** { *; }
 -dontwarn com.anysdk.**
+
+-dontwarn com.tencent.bugly.**
+-keep public class com.tencent.bugly.**{*;}

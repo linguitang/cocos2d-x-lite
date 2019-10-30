@@ -101,7 +101,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 {
     self.playerController = [AVPlayerViewController new];
     [self setFrame:_left :_top :_width :_height];
-    [self showPlaybackControls:TRUE];
+    [self showPlaybackControls:FALSE];
     [self setKeepRatioEnabled:_keepRatioEnabled];
     _state = PlayerbackStateUnknown;
 }

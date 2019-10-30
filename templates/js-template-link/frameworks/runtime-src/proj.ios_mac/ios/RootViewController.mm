@@ -82,9 +82,10 @@ return self;
     return YES;
 }
 
-// Controls the application's preferred home indicator auto-hiding when this view controller is shown.
-- (BOOL)prefersHomeIndicatorAutoHidden {
-    return YES;
+// iphoneX白条处理
+- (UIRectEdge)preferredScreenEdgesDeferringSystemGestures
+{
+    return UIRectEdgeAll;
 }
 
 - (void)didReceiveMemoryWarning {

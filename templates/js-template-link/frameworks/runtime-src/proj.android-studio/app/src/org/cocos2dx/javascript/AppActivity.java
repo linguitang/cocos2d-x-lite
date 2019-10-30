@@ -27,12 +27,28 @@ package org.cocos2dx.javascript;
 import org.cocos2dx.lib.Cocos2dxActivity;
 import org.cocos2dx.lib.Cocos2dxGLSurfaceView;
 
+import android.os.Build;
 import android.os.Bundle;
 
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.Environment;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Properties;
 
 public class AppActivity extends Cocos2dxActivity {
+    public static final String SYS_EMUI = "emui";
+    public static final String SYS_MIUI = "miui";
+    public static final String SYS_MEIZU = "meizu";
+    public static final String SYS_OTHER = "other";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +63,8 @@ public class AppActivity extends Cocos2dxActivity {
         }
         // DO OTHER INITIALIZATION BELOW
         SDKWrapper.getInstance().init(this);
+        Window window = this.getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     }
     
@@ -65,6 +83,33 @@ public class AppActivity extends Cocos2dxActivity {
         super.onResume();
         SDKWrapper.getInstance().onResume();
 
+    }
+
+    // 获取操作系统
+    public static String getSystemName(){
+        String SYS = SYS_OTHER;
+        String manufacturer = Build.MANUFACTURER;
+        if ("xiaomi".equalsIgnoreCase(manufacturer)) {
+            return SYS_MIUI;
+        } else if ("huawei".equalsIgnoreCase(manufacturer)){
+            return SYS_EMUI;
+        } else if ("meizu".equalsIgnoreCase(manufacturer)){
+            return SYS_MEIZU;
+        }
+        return SYS;
+    }
+
+    // 获取设备名
+    public static String getDeviceName() {
+        if (Build.DEVICE.equals("x86")){
+            return Build.MANUFACTURER + " " + Build.MODEL;
+        }
+        return Build.DEVICE;
+    }
+
+    // 获取设备名
+    public static String getSystemVersion() {
+        return Build.VERSION.RELEASE;
     }
 
     @Override
