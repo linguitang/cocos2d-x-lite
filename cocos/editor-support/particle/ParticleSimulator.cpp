@@ -37,6 +37,8 @@ NS_CC_BEGIN
 
 // global particle pool
 static ParticlePool _pool;
+// particleSystem max step delta time
+static const float _maxParticleDeltaTime = 0.0333f;  
 
 void Particle::reset()
 {
@@ -215,6 +217,7 @@ void ParticleSimulator::onDisable()
 
 void ParticleSimulator::render(float dt)
 {
+    dt = dt > _maxParticleDeltaTime ? _maxParticleDeltaTime : dt;
     if (_finished || _nodeProxy == nullptr || _effect == nullptr)
     {
         return;

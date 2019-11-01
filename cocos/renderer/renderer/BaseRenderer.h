@@ -110,7 +110,8 @@ protected:
     
     struct StageInfo
     {
-        std::vector<StageItem>* items;
+    public:
+        std::vector<StageItem> items;
         std::string stage = "";
     };
     
