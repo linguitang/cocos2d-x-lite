@@ -184,6 +184,7 @@ GLView::GLView(Application* application, const std::string& name, int x, int y, 
     computeScale();
     
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_mainFBO);
+    Application::getInstance()->updateViewSize(width, height);
 }
 
 GLView::~GLView()
@@ -443,6 +444,7 @@ void GLView::onGLFWWindowIconifyCallback(GLFWwindow* /*window*/, int iconified)
 
 void GLView::onGLFWWindowSizeFunCallback(GLFWwindow *window, int width, int height)
 {
+    Application::getInstance()->updateViewSize(width, height);
     EventDispatcher::dispatchResizeEvent(width, height);
 }
 

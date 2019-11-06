@@ -39,6 +39,8 @@
 #include "Light.h"
 #include <algorithm>
 
+#include "CCApplication.h"
+
 #include "math/MathUtil.h"
 
 RENDERER_BEGIN
@@ -74,8 +76,6 @@ ForwardRenderer::~ForwardRenderer()
 bool ForwardRenderer::init(DeviceGraphics* device, std::vector<ProgramLib::Template>& programTemplates, Texture2D* defaultTexture, int width, int height)
 {
     BaseRenderer::init(device, programTemplates, defaultTexture);
-    _width = width;
-    _height = height;
     registerStage("opaque", std::bind(&ForwardRenderer::opaqueStage, this, std::placeholders::_1, std::placeholders::_2));
     registerStage("shadowcast", std::bind(&ForwardRenderer::shadowStage, this, std::placeholders::_1, std::placeholders::_2));
     registerStage("transparent", std::bind(&ForwardRenderer::transparentStage, this, std::placeholders::_1, std::placeholders::_2));
@@ -94,10 +94,11 @@ void ForwardRenderer::render(Scene* scene)
     updateLights(scene);
     scene->sortCameras();
     auto& cameras = scene->getCameras();
+    auto &viewSize = Application::getInstance()->getViewSize();
     for (auto& camera : cameras)
     {
         View* view = requestView();
-        camera->extractView(*view, _width, _height);
+        camera->extractView(*view, viewSize.x, viewSize.y);
     }
 
     for (size_t i = 0, len = _views->getLength(); i < len; ++i) {
@@ -111,8 +112,9 @@ void ForwardRenderer::render(Scene* scene)
 void ForwardRenderer::renderCamera(Camera* camera, Scene* scene)
 {
     reset();
-    int width = _width;
-    int height = _height;
+    auto &viewSize = Application::getInstance()->getViewSize();
+    int width = viewSize.x;
+    int height = viewSize.y;
     FrameBuffer* fb = camera->getFrameBuffer();
     if (nullptr != fb) {
         width = fb->getWidth();

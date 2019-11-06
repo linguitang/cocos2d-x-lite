@@ -39,27 +39,17 @@
 
 namespace
 {
-    cocos2d::Vec2 getResolution()
-    {
-        CGRect bounds = [UIScreen mainScreen].bounds;
-        float scale = [[UIScreen mainScreen] scale];
-        float width = bounds.size.width * scale;
-        float height = bounds.size.height * scale;
-        
-        return cocos2d::Vec2(width, height);
-    }
-    
     bool setCanvasCallback(se::Object* global)
     {
-        cocos2d::Vec2 resolution = getResolution();
+        auto &viewSize = cocos2d::Application::getInstance()->getViewSize();
         se::ScriptEngine* se = se::ScriptEngine::getInstance();
         uint8_t devicePixelRatio = cocos2d::Application::getInstance()->getDevicePixelRatio();
         char commandBuf[200] = {0};
         sprintf(commandBuf, "window.innerWidth = %d; window.innerHeight = %d;",
-                (int)(resolution.x / devicePixelRatio),
-                (int)(resolution.y / devicePixelRatio));
+                (int)(viewSize.x / devicePixelRatio),
+                (int)(viewSize.y / devicePixelRatio));
         se->evalString(commandBuf);
-        cocos2d::ccViewport(0, 0, resolution.x / devicePixelRatio, resolution.y / devicePixelRatio);
+        cocos2d::ccViewport(0, 0, viewSize.x / devicePixelRatio, viewSize.y / devicePixelRatio);
         glDepthMask(GL_TRUE);
         return true;
     }
@@ -219,6 +209,8 @@ Application::Application(const std::string& name, int width, int height)
     EventDispatcher::init();
     
     _delegate = [[MainLoop alloc] initWithApplication:this];
+    
+    updateViewSize(width, height);
 }
 
 Application::~Application()
@@ -243,6 +235,17 @@ Application::~Application()
     _renderTexture = nullptr;
 
     Application::_instance = nullptr;
+}
+
+const cocos2d::Vec2& Application::getViewSize() const
+{
+    return _viewSize;
+}
+
+void Application::updateViewSize(int width, int height)
+{
+    _viewSize.x = width;
+    _viewSize.y = height;
 }
 
 void Application::start()

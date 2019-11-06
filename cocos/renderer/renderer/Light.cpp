@@ -161,6 +161,8 @@ void Light::extractView(View& out, const std::vector<std::string>& stages)
         case LightType::POINT:
             computePointLightViewProjMatrix(out.matView, out.matProj);
             break;
+        case LightType::AMBIENT:
+            break;
         default:
             RENDERER_LOGW("Shadow of this light type is not supported");
             break;
