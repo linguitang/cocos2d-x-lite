@@ -45,3 +45,18 @@
 
 -dontwarn com.tencent.bugly.**
 -keep public class com.tencent.bugly.**{*;}
+
+-dontwarn com.alipay.**
+-keep public class com.alipay.**{*;}
+
+-keep class com.tencent.mm.opensdk.** {
+    *;
+}
+
+-keep class com.tencent.wxop.** {
+    *;
+}
+
+-keep class com.tencent.mm.sdk.** {
+    *;
+}
