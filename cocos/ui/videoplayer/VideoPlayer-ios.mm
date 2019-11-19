@@ -108,6 +108,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) dealloc
 {
+    _videoPlayer = nullptr;
     [self cleanup];
     [super dealloc];
 }
@@ -234,7 +235,6 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) cleanup
 {
-    _videoPlayer = nullptr;
     [self stop];
     [self removePlayerEventListener];
     [self.playerController.view removeFromSuperview];
