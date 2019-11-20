@@ -31,6 +31,8 @@
 #import "SDKWrapper.h"
 #import "platform/ios/CCEAGLView-ios.h"
 #import "sys/utsname.h"
+#import "IAPShare.h"
+#include "cocos/scripting/js-bindings/jswrapper/SeApi.h"
 
 
 
@@ -143,12 +145,9 @@ static AppController* _appController = nil;
     if ([deviceString isEqualToString:@"iPhone11,4"])   return @"iPhone XS Max";
     if ([deviceString isEqualToString:@"iPhone11,6"])   return @"iPhone XS Max";
     if ([deviceString isEqualToString:@"iPhone11,8"])   return @"iPhone XR";
-    
-    if ([deviceString isEqualToString:@"iPod1,1"])      return @"iPod Touch 1G";
-    if ([deviceString isEqualToString:@"iPod2,1"])      return @"iPod Touch 2G";
-    if ([deviceString isEqualToString:@"iPod3,1"])      return @"iPod Touch 3G";
-    if ([deviceString isEqualToString:@"iPod4,1"])      return @"iPod Touch 4G";
-    if ([deviceString isEqualToString:@"iPod5,1"])      return @"iPod Touch";
+    if ([deviceString isEqualToString:@"iPhone12,1"])   return @"iPhone 11";
+    if ([deviceString isEqualToString:@"iPhone12,3"])   return @"iPhone 11 Pro";
+    if ([deviceString isEqualToString:@"iPhone12,5"])   return @"iPhone 11 Pro Max";
     
     if ([deviceString isEqualToString:@"iPad1,1"])      return @"iPad";
     if ([deviceString isEqualToString:@"iPad1,2"])      return @"iPad 3G";
@@ -197,12 +196,11 @@ static AppController* _appController = nil;
     if ([deviceString isEqualToString:@"iPad8,6"])     return @"iPad Pro";
     if ([deviceString isEqualToString:@"iPad8,7"])     return @"iPad Pro";
     if ([deviceString isEqualToString:@"iPad8,8"])     return @"iPad Pro";
+    if ([deviceString isEqualToString:@"iPad11,1"])     return @"iPad mini 5th";
+    if ([deviceString isEqualToString:@"iPad11,2"])     return @"iPad mini 5th";
+    if ([deviceString isEqualToString:@"iPad11,3"])     return @"iPad Air 3rd ";
+    if ([deviceString isEqualToString:@"iPad11,4"])     return @"iPad Air 3rd ";
     
-    
-    if ([deviceString isEqualToString:@"AppleTV2,1"])    return @"Apple TV 2";
-    if ([deviceString isEqualToString:@"AppleTV3,1"])    return @"Apple TV 3";
-    if ([deviceString isEqualToString:@"AppleTV3,2"])    return @"Apple TV 3";
-    if ([deviceString isEqualToString:@"AppleTV5,3"])    return @"Apple TV 4";
     
     if ([deviceString isEqualToString:@"i386"])         return @"Simulator";
     if ([deviceString isEqualToString:@"x86_64"])       return @"Simulator";
@@ -234,6 +232,70 @@ static AppController* _appController = nil;
     [_appController removeSplashView];
     // set pointer to nil after using
     _appController = nil;
+}
+
+// 购买物品
++ (void)buyGoods:(BOOL)isProduction productIdentifier : (NSString *) productIdentifier orderId : (NSString *) orderId notifyUrl : (NSString *) notifyUrl
+{
+    NSSet* dataSet = [[NSSet alloc] initWithObjects:productIdentifier, nil];
+    
+    [IAPShare sharedHelper].iap = [[IAPHelper alloc] initWithProductIdentifiers:dataSet];
+    
+    [IAPShare sharedHelper].iap.production = isProduction;
+    
+    [[IAPShare sharedHelper].iap requestProductsWithCompletion:^(SKProductsRequest* request,SKProductsResponse* response)
+     {
+         if(response.products.count > 0) {
+             SKProduct* product = [IAPShare sharedHelper].iap.products[0];
+             
+             [[IAPShare sharedHelper].iap buyProduct:product
+                                        onCompletion:^(SKPaymentTransaction* trans){
+                 se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished();").c_str()));
+                                            if(trans.error)
+                                            {
+                                                NSLog(@"Fail %@",[trans.error localizedDescription]);
+                                            }
+                                            else if(trans.transactionState == SKPaymentTransactionStatePurchased) {
+                                                NSData *receipt = [NSData dataWithContentsOfURL:[[NSBundle mainBundle] appStoreReceiptURL]];
+                                                NSString *receiptString = [IAPHelper getBase64Str:receipt];//转化为base64字符串
+                                                [[IAPShare sharedHelper].iap provideContentWithTransaction:trans];
+                                              
+                                                NSURL *url = [NSURL URLWithString:notifyUrl];
+                                                NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
+                                                NSString *bodyData = [[NSString alloc] initWithFormat:@"orderId=%@&receipt=%@", orderId, receiptString];
+                                                request.HTTPMethod = @"POST";
+                                                request.HTTPBody = [bodyData dataUsingEncoding:NSUTF8StringEncoding];
+                                                NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+                                                  dataTaskWithRequest: request
+                                                  completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error)
+                                                  {
+                                                    NSString * trueStr = @"true";
+                                                    NSString * falseStr = @"false";
+                                                    std::string c_receiptString = [receiptString UTF8String];
+                                                    std::string c_trueString = [trueStr UTF8String];
+                                                    std::string c_falseString = [falseStr UTF8String];
+                                                    std::string c_orderId = [orderId UTF8String];
+                                                    std::string c_notifyUrl = [notifyUrl UTF8String];
+                                                    if (error == nil){
+                                                        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+                                                        if (httpResponse.statusCode == 200) {
+                                                            
+                                                            NSString *string = [[NSString alloc] initWithData:data encoding:NSStringEncodingConversionAllowLossy];
+                                                            if ([string isEqualToString:@"success"]){
+                                                                se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_trueString.c_str()).c_str()));
+                                                                return;
+                                                            }
+                                                        }
+                                                    }
+                                                    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_falseString.c_str()).c_str()));
+                                                  }];
+                                                [task resume];                                        }
+                                            else if(trans.transactionState == SKPaymentTransactionStateFailed) {
+                                                NSLog(@"Fail");
+                                            }
+                                        }];//end of buy product
+         }
+     }];
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {

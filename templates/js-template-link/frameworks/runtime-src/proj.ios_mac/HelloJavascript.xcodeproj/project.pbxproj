@@ -72,6 +72,10 @@
 		D02148B22351962D0078C7CC /* Bugly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D02148B02351962D0078C7CC /* Bugly.framework */; };
 		D02148B32351962D0078C7CC /* libBuglyAgent.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D02148B12351962D0078C7CC /* libBuglyAgent.a */; };
 		D02148B6235196470078C7CC /* CrashReport.mm in Sources */ = {isa = PBXBuildFile; fileRef = D02148B5235196470078C7CC /* CrashReport.mm */; };
+		D03594542383B7F900EE0AC4 /* IAPShare.m in Sources */ = {isa = PBXBuildFile; fileRef = D035944D2383B7F800EE0AC4 /* IAPShare.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		D03594552383B7F900EE0AC4 /* SFHFKeychainUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = D035944F2383B7F800EE0AC4 /* SFHFKeychainUtils.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		D03594562383B7F900EE0AC4 /* IAPHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D03594512383B7F900EE0AC4 /* IAPHelper.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		D03594572383B7F900EE0AC4 /* NSString+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = D03594522383B7F900EE0AC4 /* NSString+Base64.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		D454520C156E22BD00887EB5 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D454520B156E22BD00887EB5 /* libz.dylib */; };
 		D4545227156E28EF00887EB5 /* AppDelegate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4545215156E28EF00887EB5 /* AppDelegate.cpp */; };
 		D6B061241803AB9F0077942B /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6B061231803AB9F0077942B /* CoreMotion.framework */; };
@@ -183,6 +187,14 @@
 		D02148B4235196470078C7CC /* CrashReport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CrashReport.h; path = bugly/CrashReport.h; sourceTree = "<group>"; };
 		D02148B5235196470078C7CC /* CrashReport.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = CrashReport.mm; path = bugly/CrashReport.mm; sourceTree = "<group>"; };
 		D02148B7235196CE0078C7CC /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS13.1.sdk/usr/lib/libc++.tbd"; sourceTree = DEVELOPER_DIR; };
+		D035944C2383B7F800EE0AC4 /* SFHFKeychainUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SFHFKeychainUtils.h; path = ios/IAPHelper/SFHFKeychainUtils.h; sourceTree = SOURCE_ROOT; };
+		D035944D2383B7F800EE0AC4 /* IAPShare.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IAPShare.m; path = ios/IAPHelper/IAPShare.m; sourceTree = SOURCE_ROOT; };
+		D035944E2383B7F800EE0AC4 /* IAPHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IAPHelper.h; path = ios/IAPHelper/IAPHelper.h; sourceTree = SOURCE_ROOT; };
+		D035944F2383B7F800EE0AC4 /* SFHFKeychainUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SFHFKeychainUtils.m; path = ios/IAPHelper/SFHFKeychainUtils.m; sourceTree = SOURCE_ROOT; };
+		D03594502383B7F800EE0AC4 /* NSString+Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSString+Base64.h"; path = "ios/IAPHelper/NSString+Base64.h"; sourceTree = SOURCE_ROOT; };
+		D03594512383B7F900EE0AC4 /* IAPHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IAPHelper.m; path = ios/IAPHelper/IAPHelper.m; sourceTree = SOURCE_ROOT; };
+		D03594522383B7F900EE0AC4 /* NSString+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSString+Base64.m"; path = "ios/IAPHelper/NSString+Base64.m"; sourceTree = SOURCE_ROOT; };
+		D03594532383B7F900EE0AC4 /* IAPShare.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IAPShare.h; path = ios/IAPHelper/IAPShare.h; sourceTree = SOURCE_ROOT; };
 		D454520B156E22BD00887EB5 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		D4545215156E28EF00887EB5 /* AppDelegate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AppDelegate.cpp; sourceTree = "<group>"; };
 		D4545216156E28EF00887EB5 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -396,6 +408,14 @@
 		D4545214156E28EF00887EB5 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				D035944E2383B7F800EE0AC4 /* IAPHelper.h */,
+				D03594512383B7F900EE0AC4 /* IAPHelper.m */,
+				D03594532383B7F900EE0AC4 /* IAPShare.h */,
+				D035944D2383B7F800EE0AC4 /* IAPShare.m */,
+				D03594502383B7F800EE0AC4 /* NSString+Base64.h */,
+				D03594522383B7F900EE0AC4 /* NSString+Base64.m */,
+				D035944C2383B7F800EE0AC4 /* SFHFKeychainUtils.h */,
+				D035944F2383B7F800EE0AC4 /* SFHFKeychainUtils.m */,
 				D02148B4235196470078C7CC /* CrashReport.h */,
 				D02148B5235196470078C7CC /* CrashReport.mm */,
 				D4545215156E28EF00887EB5 /* AppDelegate.cpp */,
@@ -566,9 +586,13 @@
 			files = (
 				509D4AC917EBB2AB00697056 /* RootViewController.mm in Sources */,
 				D4545227156E28EF00887EB5 /* AppDelegate.cpp in Sources */,
+				D03594552383B7F900EE0AC4 /* SFHFKeychainUtils.m in Sources */,
 				509D4AC817EBB2AB00697056 /* main.m in Sources */,
+				D03594572383B7F900EE0AC4 /* NSString+Base64.m in Sources */,
+				D03594542383B7F900EE0AC4 /* IAPShare.m in Sources */,
 				D02148B6235196470078C7CC /* CrashReport.mm in Sources */,
 				22CC757121BA5B5C00FBF2F7 /* SDKWrapper.m in Sources */,
+				D03594562383B7F900EE0AC4 /* IAPHelper.m in Sources */,
 				509D4ABC17EBB2AB00697056 /* AppController.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -723,6 +747,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/ios/bugly",
+					"$(PROJECT_DIR)/ios/IAPHelper",
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -739,6 +764,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"/Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/libs",
 					"$(PROJECT_DIR)/ios/bugly",
+					"$(PROJECT_DIR)/ios/IAPHelper",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -747,7 +773,7 @@
 				SDKROOT = iphoneos;
 				STRIP_PNG_TEXT = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper";
 				VALID_ARCHS = "arm64 armv7";
 			};
 			name = Debug;
@@ -764,6 +790,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/ios/bugly",
+					"$(PROJECT_DIR)/ios/IAPHelper",
 				);
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -779,6 +806,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"/Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/libs",
 					"$(PROJECT_DIR)/ios/bugly",
+					"$(PROJECT_DIR)/ios/IAPHelper",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -787,7 +815,7 @@
 				SDKROOT = iphoneos;
 				STRIP_PNG_TEXT = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper";
 				VALID_ARCHS = "arm64 armv7";
 			};
 			name = Release;

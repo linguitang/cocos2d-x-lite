@@ -66,6 +66,7 @@ public class AppActivity extends Cocos2dxActivity {
     private static Handler mHandler = new Handler() {
         @SuppressWarnings("unused")
         public void handleMessage(Message msg) {
+            app.chargeFinished();
             PayResult payResult = new PayResult((Map<String, String>) msg.obj);
             /**
              * 对于支付结果，请商户依赖服务端的异步通知结果。同步通知结果，仅作为支付结束的通知。
@@ -74,7 +75,7 @@ public class AppActivity extends Cocos2dxActivity {
             String resultStatus = payResult.getResultStatus();
             // 判断resultStatus 为9000则代表支付成功
             if (TextUtils.equals(resultStatus, "9000")) {
-                app.payFinished();
+                app.chargeSuccess();
                 // 该笔订单是否真实支付成功，需要依赖服务端的异步通知。
                 //showAlert(PayDemoActivity.this, getString(R.string.pay_success) + payResult);
             } else {
@@ -85,7 +86,7 @@ public class AppActivity extends Cocos2dxActivity {
     };
 
     // 支付结束
-    public void payFinished() {
+    public void chargeSuccess() {
         runOnGLThread(new Runnable() {
             @Override
             public void run() {
@@ -157,6 +158,16 @@ public class AppActivity extends Cocos2dxActivity {
         return Build.VERSION.RELEASE;
     }
 
+    // 支付结束
+    public void chargeFinished() {
+        runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.PayManager.getInstance().chargeFinished();"));
+            }
+        });
+    }
+
     // 支付宝支付
     public static void aliPay(String info){
         final String orderInfo = info;   // 订单信息
@@ -204,8 +215,9 @@ public class AppActivity extends Cocos2dxActivity {
 
     // 微信支付结束
     public void wxPayFinished(final int errorCode, final String extData) {
+        chargeFinished();
         if (errorCode == 0) {
-            payFinished();
+            chargeSuccess();
         }
     }
 
