@@ -281,11 +281,6 @@
 
 }
 
-+(NSString *)getBase64Str : (NSData*) receiptData{
-    NSString *receiptBase64 = [NSString base64StringFromData:receiptData length:[receiptData length]];
-    return receiptBase64;
-}
-
 - (void)checkReceipt:(NSData*)receiptData onCompletion:(checkReceiptCompleteResponseBlock)completion
 {
     [self checkReceipt:receiptData AndSharedSecret:nil onCompletion:completion];

@@ -42,8 +42,6 @@ typedef void (^resoreProductsCompleteResponseBlock) (SKPaymentQueue* payment,NSE
 //check isPurchased or not
 - (BOOL)isPurchasedProductsIdentifier:(NSString*)productID;
 
-+(NSString *)getBase64Str : (NSData*) receiptData;
-
 //check receipt but recommend to use in server side instead of using this function
 - (void)checkReceipt:(NSData*)receiptData onCompletion:(checkReceiptCompleteResponseBlock)completion;
 

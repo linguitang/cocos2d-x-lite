@@ -237,6 +237,7 @@ static AppController* _appController = nil;
 // 购买物品
 + (void)buyGoods:(BOOL)isProduction productIdentifier : (NSString *) productIdentifier orderId : (NSString *) orderId notifyUrl : (NSString *) notifyUrl
 {
+    [[IAPShare sharedHelper].iap clearSavedPurchasedProducts];
     NSSet* dataSet = [[NSSet alloc] initWithObjects:productIdentifier, nil];
     
     [IAPShare sharedHelper].iap = [[IAPHelper alloc] initWithProductIdentifiers:dataSet];
@@ -250,19 +251,23 @@ static AppController* _appController = nil;
              
              [[IAPShare sharedHelper].iap buyProduct:product
                                         onCompletion:^(SKPaymentTransaction* trans){
-                 se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished();").c_str()));
+                std::string c_orderId = [orderId UTF8String];
                                             if(trans.error)
-                                            {
+                                            {se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                                 NSLog(@"Fail %@",[trans.error localizedDescription]);
                                             }
                                             else if(trans.transactionState == SKPaymentTransactionStatePurchased) {
-                                                NSData *receipt = [NSData dataWithContentsOfURL:[[NSBundle mainBundle] appStoreReceiptURL]];
-                                                NSString *receiptString = [IAPHelper getBase64Str:receipt];//转化为base64字符串
-                                                [[IAPShare sharedHelper].iap provideContentWithTransaction:trans];
+                                                //NSData *receipt = [NSData dataWithContentsOfURL:[[NSBundle mainBundle] appStoreReceiptURL]];
+                                                //NSString *receiptString = [IAPHelper getBase64Str:receipt];//转化为base64字符串
+                                                //[[IAPShare sharedHelper].iap provideContentWithTransaction:trans];
+                                                NSURL* receiptURL = [[NSBundle mainBundle]appStoreReceiptURL];
+                                                    
+                                                NSString* receipt = [[NSData dataWithContentsOfURL:receiptURL]base64EncodedStringWithOptions:0];
+                                                receipt = [receipt stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet characterSetWithCharactersInString:@"#%<>[\\]^`{|}\"]+"].invertedSet];
                                               
                                                 NSURL *url = [NSURL URLWithString:notifyUrl];
                                                 NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
-                                                NSString *bodyData = [[NSString alloc] initWithFormat:@"orderId=%@&receipt=%@", orderId, receiptString];
+                                                NSString *bodyData = [[NSString alloc] initWithFormat:@"orderId=%@&receipt=%@", orderId, receipt];
                                                 request.HTTPMethod = @"POST";
                                                 request.HTTPBody = [bodyData dataUsingEncoding:NSUTF8StringEncoding];
                                                 NSURLSessionDataTask *task = [[NSURLSession sharedSession]
@@ -271,7 +276,7 @@ static AppController* _appController = nil;
                                                   {
                                                     NSString * trueStr = @"true";
                                                     NSString * falseStr = @"false";
-                                                    std::string c_receiptString = [receiptString UTF8String];
+                                                    std::string c_receiptString = [receipt UTF8String];
                                                     std::string c_trueString = [trueStr UTF8String];
                                                     std::string c_falseString = [falseStr UTF8String];
                                                     std::string c_orderId = [orderId UTF8String];
@@ -282,16 +287,22 @@ static AppController* _appController = nil;
                                                             
                                                             NSString *string = [[NSString alloc] initWithData:data encoding:NSStringEncodingConversionAllowLossy];
                                                             if ([string isEqualToString:@"success"]){
+                                                               se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                                                 se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_trueString.c_str()).c_str()));
                                                                 return;
                                                             }
                                                         }
                                                     }
+                                                   
+                                                   se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                                     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_falseString.c_str()).c_str()));
                                                   }];
                                                 [task resume];                                        }
                                             else if(trans.transactionState == SKPaymentTransactionStateFailed) {
+                                                se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                                 NSLog(@"Fail");
+                                            } else {
+                                                se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                             }
                                         }];//end of buy product
          }
