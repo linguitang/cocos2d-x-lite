@@ -197,6 +197,7 @@ public class AppActivity extends Cocos2dxActivity {
 
         // 判断是否安装了微信客户端
         if (!api.isWXAppInstalled()) {
+            app.chargeFinished();
             return -1;
         }
 
