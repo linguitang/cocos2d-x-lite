@@ -295,6 +295,8 @@ static AppController* _appController = nil;
                                                     }
                                                    
                                                    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
+                                                    
+                                                   c_receiptString = [@"" UTF8String];
                                                     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_falseString.c_str()).c_str()));
                                                   }];
                                                 [task resume];                                        }
