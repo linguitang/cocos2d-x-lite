@@ -327,14 +327,11 @@ static AppController* _appController = nil;
 
 // 初始化微信
 +(void)initWeChat:(NSString *)appId universalLink:(NSString *)universalLink {
-    NSLog(@"appId %@",appId);
-    NSLog(@"universalLink %@",universalLink);
     [WXApi registerApp:appId universalLink:universalLink];
 }
 
 // 微信分享图片给好友
 + (bool) wxShareImageToFriend:(NSString *) imagePath{
-    NSLog(@"wxShareImageToFriend %@",imagePath);
     if (![WXApi isWXAppInstalled]) {
         return false;
     }
@@ -363,7 +360,6 @@ static AppController* _appController = nil;
 
 // 微信图片分享到朋友圈
 + (bool) wxShareImageToWorld:(NSString *)imagePath{
-    NSLog(@"wxShareImageToWorld %@",imagePath);
     if (![WXApi isWXAppInstalled]) {
         return false;
     }
