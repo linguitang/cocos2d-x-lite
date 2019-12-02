@@ -32,6 +32,7 @@
 #import "platform/ios/CCEAGLView-ios.h"
 #import "sys/utsname.h"
 #import "IAPShare.h"
+#import "WXApiManager.h"
 #include "cocos/scripting/js-bindings/jswrapper/SeApi.h"
 
 
@@ -309,6 +310,84 @@ static AppController* _appController = nil;
                                         }];//end of buy product
          }
      }];
+}
+
+
+- (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
+    return  [WXApi handleOpenURL:url delegate:[WXApiManager sharedManager]];
+}
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    return [WXApi handleOpenURL:url delegate:[WXApiManager sharedManager]];
+}
+
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void(^)(NSArray<id<UIUserActivityRestoring>> * __nullable restorableObjects))restorationHandler {
+    return [WXApi handleOpenUniversalLink:userActivity delegate:[WXApiManager sharedManager]];
+}
+
+// 初始化微信
++(void)initWeChat:(NSString *)appId universalLink:(NSString *)universalLink {
+    NSLog(@"appId %@",appId);
+    NSLog(@"universalLink %@",universalLink);
+    [WXApi registerApp:appId universalLink:universalLink];
+}
+
+// 微信分享图片给好友
++ (bool) wxShareImageToFriend:(NSString *) imagePath{
+    NSLog(@"wxShareImageToFriend %@",imagePath);
+    if (![WXApi isWXAppInstalled]) {
+        return false;
+    }
+    
+    WXMediaMessage *message = [WXMediaMessage message];
+    UIImage *thumbImage = [UIImage imageWithData:[NSData dataWithContentsOfFile:imagePath]];
+    CGSize reSize = {thumbImage.size.width / 3,thumbImage.size.height / 3};
+    UIGraphicsBeginImageContext(CGSizeMake(reSize.width, reSize.height));
+    [thumbImage drawInRect:CGRectMake(0, 0, reSize.width, reSize.height)];
+    thumbImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    [message setThumbImage:thumbImage];
+    
+    WXImageObject *imageObject = [WXImageObject object];
+    imageObject.imageData = [NSData dataWithContentsOfFile:imagePath];
+    message.mediaObject = imageObject;
+    SendMessageToWXReq* req = [[SendMessageToWXReq alloc] init];
+    req.bText = NO;
+    req.message = message;
+    req.scene = WXSceneSession;
+    [WXApi sendReq:req completion:^(BOOL success) {
+        //<#code#>
+    }];
+    return true;
+}
+
+// 微信图片分享到朋友圈
++ (bool) wxShareImageToWorld:(NSString *)imagePath{
+    NSLog(@"wxShareImageToWorld %@",imagePath);
+    if (![WXApi isWXAppInstalled]) {
+        return false;
+    }
+    
+    WXMediaMessage *message = [WXMediaMessage message];
+    UIImage *thumbImage = [UIImage imageWithData:[NSData dataWithContentsOfFile:imagePath]];
+    CGSize reSize = {thumbImage.size.width / 3,thumbImage.size.height / 3};
+    UIGraphicsBeginImageContext(CGSizeMake(reSize.width, reSize.height));
+    [thumbImage drawInRect:CGRectMake(0, 0, reSize.width, reSize.height)];
+    thumbImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    [message setThumbImage:thumbImage];
+    
+    WXImageObject *imageObject = [WXImageObject object];
+    imageObject.imageData = [NSData dataWithContentsOfFile:imagePath];
+    message.mediaObject = imageObject;
+    SendMessageToWXReq* req = [[SendMessageToWXReq alloc] init];
+    req.bText = NO;
+    req.message = message;
+    req.scene = WXSceneTimeline;
+    [WXApi sendReq:req completion:^(BOOL success) {
+        //<#code#>
+    }];
+    return true;
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {

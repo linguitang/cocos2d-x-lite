@@ -30,6 +30,8 @@ import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -50,6 +52,9 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Properties;
 import com.alipay.sdk.app.PayTask;
+import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.opensdk.modelmsg.WXImageObject;
+import com.tencent.mm.opensdk.modelmsg.WXMediaMessage;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 import com.tencent.mm.opensdk.modelpay.PayReq;
@@ -202,14 +207,14 @@ public class AppActivity extends Cocos2dxActivity {
         }
 
         PayReq req = new PayReq();
-        req.appId			= appid;
-        req.partnerId		= partnerid;
-        req.prepayId		= prepayid;
-        req.nonceStr		= noncestr;
-        req.timeStamp		= timeStamp;
-        req.packageValue	= packageValue;
-        req.sign			= sign;
-        req.extData			= orderId;
+        req.appId           = appid;
+        req.partnerId       = partnerid;
+        req.prepayId        = prepayid;
+        req.nonceStr        = noncestr;
+        req.timeStamp       = timeStamp;
+        req.packageValue    = packageValue;
+        req.sign            = sign;
+        req.extData         = orderId;
         api.sendReq(req);
         return 1;
     }
@@ -221,6 +226,66 @@ public class AppActivity extends Cocos2dxActivity {
             chargeSuccess();
         }
     }
+    private static String buildTransaction(final String type) {
+        return (type == null) ? String.valueOf(System.currentTimeMillis()) : type + System.currentTimeMillis();
+    }
+
+    // 微信分享图片给好友
+    public static int wxShareImageToFriend(String appid, String imagePath) {
+        api = WXAPIFactory.createWXAPI(app, appid, true);
+        api.registerApp(appid);
+        // 判断是否安装了微信客户端
+        if (!api.isWXAppInstalled()) {
+            return -1;
+        }
+
+        Bitmap imageBitmap = BitmapFactory.decodeFile(imagePath);
+
+        WXImageObject imgObj = new WXImageObject(imageBitmap);
+
+        WXMediaMessage msg = new WXMediaMessage();
+        msg.mediaObject = imgObj;
+
+        Bitmap thumbBmp = Bitmap.createScaledBitmap(imageBitmap, imageBitmap.getWidth() / 8, imageBitmap.getHeight() / 8, true);
+        imageBitmap.recycle();
+        msg.thumbData = Util.bmpToByteArray(thumbBmp, true);
+
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = buildTransaction(imagePath);
+        req.message = msg;
+        req.scene = SendMessageToWX.Req.WXSceneSession;
+        api.sendReq(req);
+        return 1;
+    }
+
+    // 微信分享图片到朋友圈
+    public static int wxShareImageToWorld(String appid, String imagePath) {
+        api = WXAPIFactory.createWXAPI(app, appid, true);
+        api.registerApp(appid);
+        // 判断是否安装了微信客户端
+        if (!api.isWXAppInstalled()) {
+            return -1;
+        }
+
+        Bitmap imageBitmap = BitmapFactory.decodeFile(imagePath);
+
+        WXImageObject imgObj = new WXImageObject(imageBitmap);
+
+        WXMediaMessage msg = new WXMediaMessage();
+        msg.mediaObject = imgObj;
+
+        Bitmap thumbBmp = Bitmap.createScaledBitmap(imageBitmap, imageBitmap.getWidth() / 8, imageBitmap.getHeight() / 8, true);
+        imageBitmap.recycle();
+        msg.thumbData = Util.bmpToByteArray(thumbBmp, true);
+
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = buildTransaction(imagePath);
+        req.message = msg;
+        req.scene = SendMessageToWX.Req.WXSceneTimeline;
+        api.sendReq(req);
+        return 1;
+    }
+
 
     @Override
     protected void onPause() {

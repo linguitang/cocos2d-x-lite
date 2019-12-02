@@ -76,6 +76,8 @@
 		D03594552383B7F900EE0AC4 /* SFHFKeychainUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = D035944F2383B7F800EE0AC4 /* SFHFKeychainUtils.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		D03594562383B7F900EE0AC4 /* IAPHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = D03594512383B7F900EE0AC4 /* IAPHelper.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
 		D03594572383B7F900EE0AC4 /* NSString+Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = D03594522383B7F900EE0AC4 /* NSString+Base64.m */; settings = {COMPILER_FLAGS = "-fobjc-arc"; }; };
+		D0ADB7112394AFC70044D4C8 /* libWeChatSDK.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0ADB70C2394AFC70044D4C8 /* libWeChatSDK.a */; };
+		D0ADB7122394AFC70044D4C8 /* WXApiManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = D0ADB70E2394AFC70044D4C8 /* WXApiManager.mm */; };
 		D454520C156E22BD00887EB5 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D454520B156E22BD00887EB5 /* libz.dylib */; };
 		D4545227156E28EF00887EB5 /* AppDelegate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D4545215156E28EF00887EB5 /* AppDelegate.cpp */; };
 		D6B061241803AB9F0077942B /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D6B061231803AB9F0077942B /* CoreMotion.framework */; };
@@ -195,6 +197,12 @@
 		D03594512383B7F900EE0AC4 /* IAPHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = IAPHelper.m; path = ios/IAPHelper/IAPHelper.m; sourceTree = SOURCE_ROOT; };
 		D03594522383B7F900EE0AC4 /* NSString+Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSString+Base64.m"; path = "ios/IAPHelper/NSString+Base64.m"; sourceTree = SOURCE_ROOT; };
 		D03594532383B7F900EE0AC4 /* IAPShare.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IAPShare.h; path = ios/IAPHelper/IAPShare.h; sourceTree = SOURCE_ROOT; };
+		D0ADB70B2394AFC70044D4C8 /* WXApi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WXApi.h; path = ios/weChat/WXApi.h; sourceTree = SOURCE_ROOT; };
+		D0ADB70C2394AFC70044D4C8 /* libWeChatSDK.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libWeChatSDK.a; path = ios/weChat/libWeChatSDK.a; sourceTree = SOURCE_ROOT; };
+		D0ADB70D2394AFC70044D4C8 /* WXApiManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WXApiManager.h; path = ios/weChat/WXApiManager.h; sourceTree = SOURCE_ROOT; };
+		D0ADB70E2394AFC70044D4C8 /* WXApiManager.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WXApiManager.mm; path = ios/weChat/WXApiManager.mm; sourceTree = SOURCE_ROOT; };
+		D0ADB70F2394AFC70044D4C8 /* WechatAuthSDK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WechatAuthSDK.h; path = ios/weChat/WechatAuthSDK.h; sourceTree = SOURCE_ROOT; };
+		D0ADB7102394AFC70044D4C8 /* WXApiObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WXApiObject.h; path = ios/weChat/WXApiObject.h; sourceTree = SOURCE_ROOT; };
 		D454520B156E22BD00887EB5 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		D4545215156E28EF00887EB5 /* AppDelegate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AppDelegate.cpp; sourceTree = "<group>"; };
 		D4545216156E28EF00887EB5 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -242,6 +250,7 @@
 				ABE456EB1D34F89000F1F400 /* GameController.framework in Frameworks */,
 				ABE456E91D34F88A00F1F400 /* SystemConfiguration.framework in Frameworks */,
 				ABE456E71D34F87F00F1F400 /* MobileCoreServices.framework in Frameworks */,
+				D0ADB7112394AFC70044D4C8 /* libWeChatSDK.a in Frameworks */,
 				ABE456E51D34F87A00F1F400 /* CoreFoundation.framework in Frameworks */,
 				ABE456E31D34F87300F1F400 /* CFNetwork.framework in Frameworks */,
 				294D7D801D0D668F002CE7B7 /* CoreText.framework in Frameworks */,
@@ -408,6 +417,12 @@
 		D4545214156E28EF00887EB5 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				D0ADB70C2394AFC70044D4C8 /* libWeChatSDK.a */,
+				D0ADB70F2394AFC70044D4C8 /* WechatAuthSDK.h */,
+				D0ADB70B2394AFC70044D4C8 /* WXApi.h */,
+				D0ADB70D2394AFC70044D4C8 /* WXApiManager.h */,
+				D0ADB70E2394AFC70044D4C8 /* WXApiManager.mm */,
+				D0ADB7102394AFC70044D4C8 /* WXApiObject.h */,
 				D035944E2383B7F800EE0AC4 /* IAPHelper.h */,
 				D03594512383B7F900EE0AC4 /* IAPHelper.m */,
 				D03594532383B7F900EE0AC4 /* IAPShare.h */,
@@ -590,6 +605,7 @@
 				509D4AC817EBB2AB00697056 /* main.m in Sources */,
 				D03594572383B7F900EE0AC4 /* NSString+Base64.m in Sources */,
 				D03594542383B7F900EE0AC4 /* IAPShare.m in Sources */,
+				D0ADB7122394AFC70044D4C8 /* WXApiManager.mm in Sources */,
 				D02148B6235196470078C7CC /* CrashReport.mm in Sources */,
 				22CC757121BA5B5C00FBF2F7 /* SDKWrapper.m in Sources */,
 				D03594562383B7F900EE0AC4 /* IAPHelper.m in Sources */,
@@ -748,6 +764,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/ios/bugly",
 					"$(PROJECT_DIR)/ios/IAPHelper",
+					"$(PROJECT_DIR)/ios/weChat",
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -765,15 +782,18 @@
 					"/Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/libs",
 					"$(PROJECT_DIR)/ios/bugly",
 					"$(PROJECT_DIR)/ios/IAPHelper",
+					"$(PROJECT_DIR)/ios/weChat",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
 					"$(inherited)",
+					"-force_load",
+					"$(PROJECT_DIR)/ios/weChat/libWeChatSDK.a",
 				);
 				SDKROOT = iphoneos;
 				STRIP_PNG_TEXT = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper $(PROJECT_DIR)/ios/weChat";
 				VALID_ARCHS = "arm64 armv7";
 			};
 			name = Debug;
@@ -791,6 +811,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/ios/bugly",
 					"$(PROJECT_DIR)/ios/IAPHelper",
+					"$(PROJECT_DIR)/ios/weChat",
 				);
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -807,15 +828,18 @@
 					"/Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/libs",
 					"$(PROJECT_DIR)/ios/bugly",
 					"$(PROJECT_DIR)/ios/IAPHelper",
+					"$(PROJECT_DIR)/ios/weChat",
 				);
 				OTHER_LDFLAGS = (
 					"-ObjC",
 					"$(inherited)",
+					"-force_load",
+					"$(PROJECT_DIR)/ios/weChat/libWeChatSDK.a",
 				);
 				SDKROOT = iphoneos;
 				STRIP_PNG_TEXT = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper";
+				USER_HEADER_SEARCH_PATHS = "$(inherited) /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/cocos/platform/ios /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/auto /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/plugin/jsbindings/manual /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include /Applications/CocosCreator.app/Contents/Resources/cocos2d-x/external/ios/include/spidermonkey $(PROJECT_DIR)/ios/IAPHelper $(PROJECT_DIR)/ios/weChat";
 				VALID_ARCHS = "arm64 armv7";
 			};
 			name = Release;
