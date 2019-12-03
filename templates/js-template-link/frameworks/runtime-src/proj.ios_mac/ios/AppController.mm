@@ -163,6 +163,21 @@ static AppController* _appController = nil;
 - (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent * _Nonnull))contentHandler {
 }
 
+// 判断是否是刘海屏
++ (BOOL)isPhoneX {
+   BOOL iPhoneX = NO;
+     if (UIDevice.currentDevice.userInterfaceIdiom != UIUserInterfaceIdiomPhone) {//判断是否是手机
+           return iPhoneX;
+       }
+       if (@available(iOS 11.0, *)) {
+           UIWindow *mainWindow = [[[UIApplication sharedApplication] delegate] window];
+           if (mainWindow.safeAreaInsets.bottom > 0.0) {
+               iPhoneX = YES;
+           }
+       }
+       return iPhoneX;
+}
+
 // 获取设备型号然后手动转化为对应名称
 + (NSString *)getDeviceName
 {
