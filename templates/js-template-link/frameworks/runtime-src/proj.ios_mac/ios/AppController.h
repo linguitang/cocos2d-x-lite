@@ -25,10 +25,11 @@
  ****************************************************************************/
 #import <UIKit/UIKit.h>
 #import "WXApi.h"
+#import <UserNotifications/UserNotifications.h>
 
 @class RootViewController;
 
-@interface AppController : NSObject <UIApplicationDelegate,WXApiDelegate>
+@interface AppController : NSObject <UIApplicationDelegate,WXApiDelegate,UNUserNotificationCenterDelegate>
 {
 }
 

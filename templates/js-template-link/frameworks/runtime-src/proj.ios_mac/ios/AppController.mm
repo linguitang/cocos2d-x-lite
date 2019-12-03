@@ -104,7 +104,63 @@ static AppController* _appController = nil;
                                    selector:@selector(onLoadFinished)
                                    userInfo:nil
                                     repeats:NO];
+    // 推送
+    if ([[UIDevice currentDevice].systemVersion floatValue] >= 10.0) {
+    UNUserNotificationCenter * center = [UNUserNotificationCenter currentNotificationCenter];
+    [center setDelegate:self];
+    [center requestAuthorizationWithOptions:(UNAuthorizationOptionBadge|UNAuthorizationOptionSound|UNAuthorizationOptionAlert) completionHandler:^(BOOL granted, NSError * _Nullable error) {
+    }];
+    }else if ([[UIDevice currentDevice].systemVersion floatValue] >= 8.0){
+    UIUserNotificationType notificationTypes = UIUserNotificationTypeBadge |
+    UIUserNotificationTypeSound |
+    UIUserNotificationTypeAlert;
+    UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:notificationTypes categories:nil];
+    [application registerUserNotificationSettings:settings];
+    }else{//ios8一下
+    UIRemoteNotificationType notificationTypes = UIRemoteNotificationTypeBadge |
+    UIRemoteNotificationTypeSound |
+    UIRemoteNotificationTypeAlert;
+    [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
+    }
+    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
+    // 注册获得device Token
+     
+    [application registerForRemoteNotifications];
     return YES;
+}
+
+// 将得到的deviceToken传给SDK
+- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 13) {
+        if (![deviceToken isKindOfClass:[NSData class]]) {
+            //记录获取token失败的描述
+            return;
+        }
+        const unsigned *tokenBytes = (const unsigned *)[deviceToken bytes];
+        NSString *strToken = [NSString stringWithFormat:@"%08x%08x%08x%08x%08x%08x%08x%08x",
+                              ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
+                              ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
+                              ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
+        std::string c_strToken = [strToken UTF8String];
+        se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PushManager.getInstance().setDeviceToken(\"%s\");",c_strToken.c_str()).c_str()));
+        return;
+    } else {
+        NSString *token = [NSString
+                       stringWithFormat:@"%@",deviceToken];
+        token = [token stringByReplacingOccurrencesOfString:@"<" withString:@""];
+        token = [token stringByReplacingOccurrencesOfString:@">" withString:@""];
+        token = [token stringByReplacingOccurrencesOfString:@" " withString:@""];
+        std::string c_strToken = [token UTF8String];
+        se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PushManager.getInstance().setDeviceToken(\"%s\");",c_strToken.c_str()).c_str()));
+    }
+}
+ 
+// 注册deviceToken失败
+- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{
+    NSLog(@"error -- %@",error);
+}
+
+- (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent * _Nonnull))contentHandler {
 }
 
 // 获取设备型号然后手动转化为对应名称
