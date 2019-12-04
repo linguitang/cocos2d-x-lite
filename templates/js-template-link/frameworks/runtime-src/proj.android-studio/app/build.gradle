@@ -1,6 +1,7 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 
 apply plugin: 'com.android.application'
+apply plugin: 'com.huawei.agconnect'
 
 android {
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
@@ -137,4 +138,5 @@ dependencies {
     implementation fileTree(dir: "${COCOS_X_ROOT}/cocos/platform/android/java/libs", include: ['*.jar'])
     implementation project(':libcocos2dx')
     implementation 'com.tencent.mm.opensdk:wechat-sdk-android-with-mta:+'
+    implementation 'com.huawei.hms:push:3.0.2.300'
 }

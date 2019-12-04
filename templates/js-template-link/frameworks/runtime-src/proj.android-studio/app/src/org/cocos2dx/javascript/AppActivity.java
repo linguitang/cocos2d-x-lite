@@ -52,6 +52,8 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Properties;
 import com.alipay.sdk.app.PayTask;
+import com.huawei.agconnect.config.AGConnectServicesConfig;
+import com.huawei.hms.aaid.HmsInstanceId;
 import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
 import com.tencent.mm.opensdk.modelmsg.WXImageObject;
 import com.tencent.mm.opensdk.modelmsg.WXMediaMessage;
@@ -117,6 +119,7 @@ public class AppActivity extends Cocos2dxActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         app = this;
+        HmsInstanceId inst  = HmsInstanceId.getInstance(app.getApplicationContext());
     }
 
     @Override
@@ -137,38 +140,45 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     /**
+     * 获取token
+     */
+    public static void getHuaWeiToken(final String appId) {
+        // get token
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    String getToken =  HmsInstanceId.getInstance(app.getApplicationContext()).getToken(appId, "HCM");
+                    if (!TextUtils.isEmpty(getToken)) {
+                        //TODO: Send token to your app server.
+                    }
+                } catch (Exception e) {
+                    //Log.e(TAG, "getToken failed.", e);
+                }
+            }
+        }.start();
+    }
+
+    /**
      * 是否有刘海屏
      *
      * @return
      */
     public static boolean hasNotchInScreen() {
 
-        // android  P 以上有标准 API 来判断是否有刘海屏
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            DisplayCutout displayCutout = app.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout();
-            if (displayCutout != null) {
-                // 说明有刘海屏
-                return true;
-            }
-        } else {
-            // 通过其他方式判断是否有刘海屏  目前官方提供有开发文档的就 小米，vivo，华为（荣耀），oppo
-            String manufacturer = Build.MANUFACTURER;
+        String manufacturer = Build.MANUFACTURER;
 
-            if (Utils.isStringEmpty(manufacturer)) {
-                return false;
-            } else if (manufacturer.equalsIgnoreCase("HUAWEI")) {
-                return hasNotchHw(app);
-            } else if (manufacturer.equalsIgnoreCase("xiaomi")) {
-                return hasNotchXiaoMi(app);
-            } else if (manufacturer.equalsIgnoreCase("oppo")) {
-                return hasNotchOPPO(app);
-            } else if (manufacturer.equalsIgnoreCase("vivo")) {
-                return hasNotchVIVO(app);
-            } else {
-                return false;
-            }
+        if (manufacturer.equalsIgnoreCase("HUAWEI")) {
+            return hasNotchHw(app);
+        } else if (manufacturer.equalsIgnoreCase("xiaomi")) {
+            return hasNotchXiaoMi(app);
+        } else if (manufacturer.equalsIgnoreCase("oppo")) {
+            return hasNotchOPPO(app);
+        } else if (manufacturer.equalsIgnoreCase("vivo")) {
+            return hasNotchVIVO(app);
+        } else {
+            return false;
         }
-        return false;
     }
 
     /**

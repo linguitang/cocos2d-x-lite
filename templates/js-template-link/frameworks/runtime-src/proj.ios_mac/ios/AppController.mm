@@ -329,49 +329,16 @@ static AppController* _appController = nil;
                                                 NSLog(@"Fail %@",[trans.error localizedDescription]);
                                             }
                                             else if(trans.transactionState == SKPaymentTransactionStatePurchased) {
-                                                //NSData *receipt = [NSData dataWithContentsOfURL:[[NSBundle mainBundle] appStoreReceiptURL]];
-                                                //NSString *receiptString = [IAPHelper getBase64Str:receipt];//转化为base64字符串
-                                                //[[IAPShare sharedHelper].iap provideContentWithTransaction:trans];
                                                 NSURL* receiptURL = [[NSBundle mainBundle]appStoreReceiptURL];
                                                     
                                                 NSString* receipt = [[NSData dataWithContentsOfURL:receiptURL]base64EncodedStringWithOptions:0];
-                                                receipt = [receipt stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet characterSetWithCharactersInString:@"#%<>[\\]^`{|}\"]+"].invertedSet];
-                                              
-                                                NSURL *url = [NSURL URLWithString:notifyUrl];
-                                                NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
-                                                NSString *bodyData = [[NSString alloc] initWithFormat:@"orderId=%@&receipt=%@", orderId, receipt];
-                                                request.HTTPMethod = @"POST";
-                                                request.HTTPBody = [bodyData dataUsingEncoding:NSUTF8StringEncoding];
-                                                NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-                                                  dataTaskWithRequest: request
-                                                  completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error)
-                                                  {
-                                                    NSString * trueStr = @"true";
-                                                    NSString * falseStr = @"false";
-                                                    std::string c_receiptString = [receipt UTF8String];
-                                                    std::string c_trueString = [trueStr UTF8String];
-                                                    std::string c_falseString = [falseStr UTF8String];
-                                                    std::string c_orderId = [orderId UTF8String];
-                                                    std::string c_notifyUrl = [notifyUrl UTF8String];
-                                                    if (error == nil){
-                                                        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-                                                        if (httpResponse.statusCode == 200) {
-                                                            
-                                                            NSString *string = [[NSString alloc] initWithData:data encoding:NSStringEncodingConversionAllowLossy];
-                                                            if ([string isEqualToString:@"success"]){
-                                                               se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
-                                                                se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_trueString.c_str()).c_str()));
-                                                                return;
-                                                            }
-                                                        }
-                                                    }
-                                                   
-                                                   se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
-                                                    
-                                                   c_receiptString = [@"" UTF8String];
-                                                    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str(),c_falseString.c_str()).c_str()));
-                                                  }];
-                                                [task resume];                                        }
+
+                                                std::string c_receiptString = [receipt UTF8String];
+                                                std::string c_orderId = [orderId UTF8String];
+                                                std::string c_notifyUrl = [notifyUrl UTF8String];
+                                                se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().iOSChargeSuccess(\"%s\",\"%s\",\"%s\");",c_receiptString.c_str(),c_orderId.c_str(),c_notifyUrl.c_str()).c_str()));
+                                                
+                                                                                  }
                                             else if(trans.transactionState == SKPaymentTransactionStateFailed) {
                                                 se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.PayManager.getInstance().chargeFinished(\"%s\");",c_orderId.c_str()).c_str()));
                                                 NSLog(@"Fail");
