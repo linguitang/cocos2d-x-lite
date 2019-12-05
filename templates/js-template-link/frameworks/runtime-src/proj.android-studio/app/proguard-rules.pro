@@ -70,3 +70,5 @@
 -keep class com.hianalytics.android.**{*;}
 -keep class com.huawei.updatesdk.**{*;}
 -keep class com.huawei.hms.**{*;}
+-keep class org.cocos2dx.javascript.MiPushMessageReceiver {*;}
+-dontwarn com.xiaomi.push.**

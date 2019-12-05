@@ -28,8 +28,12 @@ import org.cocos2dx.lib.Cocos2dxActivity;
 import org.cocos2dx.lib.Cocos2dxGLSurfaceView;
 import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
@@ -40,6 +44,7 @@ import android.content.res.Configuration;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Window;
@@ -49,6 +54,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import com.alipay.sdk.app.PayTask;
@@ -60,6 +66,9 @@ import com.tencent.mm.opensdk.modelmsg.WXMediaMessage;
 import com.tencent.mm.opensdk.openapi.IWXAPI;
 import com.tencent.mm.opensdk.openapi.WXAPIFactory;
 import com.tencent.mm.opensdk.modelpay.PayReq;
+import com.xiaomi.channel.commonutils.logger.LoggerInterface;
+import com.xiaomi.mipush.sdk.Logger;
+import com.xiaomi.mipush.sdk.MiPushClient;
 
 
 public class AppActivity extends Cocos2dxActivity {
@@ -69,6 +78,8 @@ public class AppActivity extends Cocos2dxActivity {
     public static final String SYS_MEIZU = "meizu";
     public static final String SYS_OTHER = "other";
     public static AppActivity app;
+    private  String MiPushId = "";
+    private  String MiPushKey = "";
     @SuppressLint("HandlerLeak")
     private static Handler mHandler = new Handler() {
         @SuppressWarnings("unused")
@@ -119,8 +130,82 @@ public class AppActivity extends Cocos2dxActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         app = this;
-        HmsInstanceId inst  = HmsInstanceId.getInstance(app.getApplicationContext());
     }
+
+    // 获取小米推送token
+    private void getMiPushToken(String appId, String appKey){
+        this.MiPushId = appId;
+        this.MiPushKey = appKey;
+        if (this.getSystemName() != SYS_MIUI && Build.VERSION.SDK_INT >= 23){
+            if (ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
+                    != PackageManager.PERMISSION_GRANTED){
+                app.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_PHONE_STATE}, 1);
+                return;
+            }
+        }
+        this.initMiPush();
+    }
+
+    // 初始化小米推送
+    private void initMiPush(){
+        if(shouldInit()) {
+            MiPushClient.registerPush(app, this.MiPushId, this.MiPushKey);
+        }
+        //打开Log
+        LoggerInterface newLogger = new LoggerInterface() {
+
+            @Override
+            public void setTag(String tag) {
+                // ignore
+            }
+
+            @Override
+            public void log(String content, Throwable t) {
+            }
+
+            @Override
+            public void log(String content) {
+            }
+        };
+        Logger.setLogger(app, newLogger);
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        switch (requestCode) {
+            case 1:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED&& grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                    if (Build.VERSION.SDK_INT >= 23) { //Build.VERSION_CODES.N
+                        if (ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
+                                == PackageManager.PERMISSION_GRANTED) {
+                           this.initMiPush();
+                            return;
+                        }
+                    }
+                    //startOpenPhoto();
+                }
+                break;
+
+
+        }
+    }
+
+    private boolean shouldInit() {
+        ActivityManager am = ((ActivityManager) getSystemService(Context.ACTIVITY_SERVICE));
+        List<ActivityManager.RunningAppProcessInfo> processInfos = am.getRunningAppProcesses();
+        String mainProcessName = getPackageName();
+        int myPid = android.os.Process.myPid();
+        for (ActivityManager.RunningAppProcessInfo info : processInfos) {
+            if (info.pid == myPid && mainProcessName.equals(info.processName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     @Override
     public Cocos2dxGLSurfaceView onCreateView() {
@@ -143,6 +228,8 @@ public class AppActivity extends Cocos2dxActivity {
      * 获取token
      */
     public static void getHuaWeiToken(final String appId) {
+
+        HmsInstanceId inst  = HmsInstanceId.getInstance(app.getApplicationContext());
         // get token
         new Thread() {
             @Override

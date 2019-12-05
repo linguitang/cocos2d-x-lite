@@ -134,6 +134,7 @@ android.applicationVariants.all { variant ->
 }
 
 dependencies {
+    implementation 'com.android.support:support-v4:24.2.0'
     implementation fileTree(dir: 'libs', include: ['*.jar','*.aar'])
     implementation fileTree(dir: "${COCOS_X_ROOT}/cocos/platform/android/java/libs", include: ['*.jar'])
     implementation project(':libcocos2dx')
