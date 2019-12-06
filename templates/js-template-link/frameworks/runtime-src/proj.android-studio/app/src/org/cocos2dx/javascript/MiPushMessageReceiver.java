@@ -15,13 +15,10 @@ import com.xiaomi.mipush.sdk.MiPushCommandMessage;
 import com.xiaomi.mipush.sdk.MiPushMessage;
 import com.xiaomi.mipush.sdk.PushMessageReceiver;
 
-import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-
-import static org.cocos2dx.lib.Cocos2dxHelper.runOnGLThread;
 
 /**
  * 1、PushMessageReceiver 是个抽象类，该类继承了 BroadcastReceiver。<br/>
@@ -66,6 +63,7 @@ public class MiPushMessageReceiver extends PushMessageReceiver {
     private String mUserAccount;
     private String mStartTime;
     private String mEndTime;
+
     @Override
     public void onReceivePassThroughMessage(Context context, MiPushMessage message) {
         mMessage = message.getContent();
@@ -141,12 +139,9 @@ public class MiPushMessageReceiver extends PushMessageReceiver {
         if (MiPushClient.COMMAND_REGISTER.equals(command)) {
             if (message.getResultCode() == ErrorCode.SUCCESS) {
                 mRegId = cmdArg1;
-                runOnGLThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.PushManager.getInstance().setDeviceToken(%s);",mRegId));
-                    }
-                });
+                Message msg = Message.obtain();
+                msg.obj = mRegId;
+                AppActivity.getHandler().sendMessage(msg);
             }
         }
     }

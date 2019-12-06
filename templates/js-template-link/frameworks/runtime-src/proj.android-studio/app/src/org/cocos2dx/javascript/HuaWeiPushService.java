@@ -1,26 +1,20 @@
 package org.cocos2dx.javascript;
 
 import android.content.Intent;
-import android.util.Log;
 
 import com.huawei.hms.push.HmsMessageService;
 import com.huawei.hms.push.RemoteMessage;
-import com.huawei.hms.push.SendException;
-
-import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
-
-import static org.cocos2dx.lib.Cocos2dxHelper.runOnGLThread;
 
 public class HuaWeiPushService extends HmsMessageService {
     @Override
     public void onNewToken(final String s) {
         super.onNewToken(s);
-        runOnGLThread(new Runnable() {
-            @Override
-            public void run() {
-                Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.PushManager.getInstance().setDeviceToken(%s);",s));
-            }
-        });
+        Intent intent = new Intent();
+        intent.setAction(AppActivity.PUSH_ACTION);
+        intent.putExtra("method", "onNewToken");
+        intent.putExtra("msg", s);
+
+        sendBroadcast(intent);
     }
 
     @Override

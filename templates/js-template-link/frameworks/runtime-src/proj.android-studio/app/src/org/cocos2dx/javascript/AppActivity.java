@@ -32,7 +32,9 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -78,8 +80,11 @@ public class AppActivity extends Cocos2dxActivity {
     public static final String SYS_MEIZU = "meizu";
     public static final String SYS_OTHER = "other";
     public static AppActivity app;
-    private  String MiPushId = "";
-    private  String MiPushKey = "";
+    public static String PUSH_ACTION = "push_tag";
+    private String MiPushId;
+    private String MiPushKey;
+    private MyReceiver receiver = null;
+    private static MiPushHandler miPushHandler = null;
     @SuppressLint("HandlerLeak")
     private static Handler mHandler = new Handler() {
         @SuppressWarnings("unused")
@@ -130,13 +135,32 @@ public class AppActivity extends Cocos2dxActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         app = this;
+        if (receiver == null){
+            receiver = new MyReceiver();
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(PUSH_ACTION);
+            registerReceiver(receiver, filter);
+        }
+        if (miPushHandler == null) {
+            miPushHandler = new MiPushHandler(getApplicationContext());
+        }
+    }
+
+    // 发送推送token给玩家
+    public void sendPushTokenToUser(final String token){
+        runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.PushManager.getInstance().setDeviceToken(\"%s\");",token));
+            }
+        });
     }
 
     // 获取小米推送token
-    private void getMiPushToken(String appId, String appKey){
-        this.MiPushId = appId;
-        this.MiPushKey = appKey;
-        if (this.getSystemName() != SYS_MIUI && Build.VERSION.SDK_INT >= 23){
+    private static void getMiPushToken(String appId, String appKey){
+        app.MiPushId = appId;
+        app.MiPushKey = appKey;
+        if (app.getSystemName() != SYS_MIUI && Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
                     != PackageManager.PERMISSION_GRANTED){
@@ -144,7 +168,7 @@ public class AppActivity extends Cocos2dxActivity {
                 return;
             }
         }
-        this.initMiPush();
+        app.initMiPush();
     }
 
     // 初始化小米推送
@@ -551,5 +575,42 @@ public class AppActivity extends Cocos2dxActivity {
     protected void onStart() {
         SDKWrapper.getInstance().onStart();
         super.onStart();
+    }
+
+    /**
+     * MyReceiver
+     */
+    public class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle bundle = intent.getExtras();
+            if (bundle != null && bundle.getString("msg") != null) {
+                if ("onNewToken".equals(bundle.getString("method"))) {
+                    app.sendPushTokenToUser(bundle.getString("msg"));
+                    //token = bundle.getString("msg");
+                }
+                //showLog(bundle.getString("method") + ":" + bundle.getString("msg"));
+            }
+        }
+    }
+
+    public static MiPushHandler getHandler() {
+        return miPushHandler;
+    }
+
+
+    public static class MiPushHandler extends Handler {
+
+        private Context context;
+
+        public MiPushHandler(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            String s = (String) msg.obj;
+            app.sendPushTokenToUser(s);
+        }
     }
 }
