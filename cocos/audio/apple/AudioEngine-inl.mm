@@ -743,7 +743,8 @@ void AudioEngineImpl::uncacheAll()
 }
 
 bool AudioEngineImpl::_checkAudioIdValid(int audioID) {
-    return _audioPlayers.find(audioID) != _audioPlayers.end();
+    auto player = _audioPlayers[audioID];
+    return player != nullptr;
 }
 
 #endif
