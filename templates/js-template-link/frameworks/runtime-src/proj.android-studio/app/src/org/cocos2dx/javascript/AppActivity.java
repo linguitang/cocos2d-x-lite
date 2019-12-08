@@ -85,6 +85,7 @@ public class AppActivity extends Cocos2dxActivity {
     private String MiPushKey;
     private MyReceiver receiver = null;
     private static MiPushHandler miPushHandler = null;
+    private static AudioRecordDemo mAudioRecordDemo;
     @SuppressLint("HandlerLeak")
     private static Handler mHandler = new Handler() {
         @SuppressWarnings("unused")
@@ -144,6 +145,33 @@ public class AppActivity extends Cocos2dxActivity {
         if (miPushHandler == null) {
             miPushHandler = new MiPushHandler(getApplicationContext());
         }
+    }
+
+    // 开始录音
+    public static boolean startRecord(String path) {
+        if (mAudioRecordDemo == null) {
+            mAudioRecordDemo = new AudioRecordDemo(app);
+        }
+
+        return mAudioRecordDemo.getNoiseLevel(path);
+    }
+
+    // 停止录音
+    public static void stopRecord() {
+        if (mAudioRecordDemo != null) {
+            mAudioRecordDemo.stop();
+        }
+    }
+
+    // 录音回调
+    public void recordCallback(final double volume) {
+        runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.RecordManager.getInstance().onDbCallback(\"%f\");",
+                        volume));
+            }
+        });
     }
 
     // 发送推送token给玩家
@@ -416,7 +444,7 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 微信支付
-    public static int weChatPay(String appid, String partnerid, String prepayid, String packageValue,
+    public static boolean weChatPay(String appid, String partnerid, String prepayid, String packageValue,
                                 String noncestr, String timeStamp, String sign, String orderId) {
 
         api = WXAPIFactory.createWXAPI(app, appid, true);
@@ -425,7 +453,7 @@ public class AppActivity extends Cocos2dxActivity {
         // 判断是否安装了微信客户端
         if (!api.isWXAppInstalled()) {
             app.chargeFinished();
-            return -1;
+            return false;
         }
 
         PayReq req = new PayReq();
@@ -438,7 +466,7 @@ public class AppActivity extends Cocos2dxActivity {
         req.sign            = sign;
         req.extData         = orderId;
         api.sendReq(req);
-        return 1;
+        return true;
     }
 
     // 微信支付结束
@@ -453,12 +481,12 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 微信分享图片给好友
-    public static int wxShareImageToFriend(String appid, String imagePath) {
+    public static boolean wxShareImageToFriend(String appid, String imagePath) {
         api = WXAPIFactory.createWXAPI(app, appid, true);
         api.registerApp(appid);
         // 判断是否安装了微信客户端
         if (!api.isWXAppInstalled()) {
-            return -1;
+            return false;
         }
 
         Bitmap imageBitmap = BitmapFactory.decodeFile(imagePath);
@@ -477,16 +505,16 @@ public class AppActivity extends Cocos2dxActivity {
         req.message = msg;
         req.scene = SendMessageToWX.Req.WXSceneSession;
         api.sendReq(req);
-        return 1;
+        return true;
     }
 
     // 微信分享图片到朋友圈
-    public static int wxShareImageToWorld(String appid, String imagePath) {
+    public static boolean wxShareImageToWorld(String appid, String imagePath) {
         api = WXAPIFactory.createWXAPI(app, appid, true);
         api.registerApp(appid);
         // 判断是否安装了微信客户端
         if (!api.isWXAppInstalled()) {
-            return -1;
+            return false;
         }
 
         Bitmap imageBitmap = BitmapFactory.decodeFile(imagePath);
@@ -505,7 +533,7 @@ public class AppActivity extends Cocos2dxActivity {
         req.message = msg;
         req.scene = SendMessageToWX.Req.WXSceneTimeline;
         api.sendReq(req);
-        return 1;
+        return true;
     }
 
 
