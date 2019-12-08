@@ -34,7 +34,7 @@
 #import "IAPShare.h"
 #import "WXApiManager.h"
 #include "cocos/scripting/js-bindings/jswrapper/SeApi.h"
-
+#import<AVFoundation/AVFoundation.h>
 
 
 using namespace cocos2d;
@@ -176,6 +176,93 @@ static AppController* _appController = nil;
            }
        }
        return iPhoneX;
+}
+
+NSTimer* levelTimer;
+AVAudioRecorder *recorder;
+// 开始录音
++(BOOL)startRecord:(NSString *) path{
+    if (recorder) {
+        return NO;
+    }
+    /* 必须添加这句话，否则在模拟器可以，在真机上获取始终是0  */
+    [[AVAudioSession sharedInstance]
+     setCategory: AVAudioSessionCategoryPlayAndRecord error: nil];
+    
+    /* 不需要保存录音文件 */
+    NSURL *url = [NSURL fileURLWithPath:path];
+    NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
+      //采样率  8000/11025/22050/44100/96000（影响音频的质量）
+    [NSNumber numberWithFloat: 8000.0],AVSampleRateKey,
+    // 音频格式
+    [NSNumber numberWithInt: kAudioFormatLinearPCM],AVFormatIDKey,
+    //采样位数  8、16、24、32 默认为16
+    [NSNumber numberWithInt:16],AVLinearPCMBitDepthKey,
+    // 音频通道数 1 或 2
+    [NSNumber numberWithInt: 1], AVNumberOfChannelsKey,
+    //录音质量
+    [NSNumber numberWithInt:AVAudioQualityHigh],AVEncoderAudioQualityKey,
+    nil];
+    
+    NSError *error;
+    recorder = [[AVAudioRecorder alloc] initWithURL:url settings:settings error:&error];
+    if (recorder)
+    {
+        [recorder prepareToRecord];
+        recorder.meteringEnabled = YES;
+        [recorder record];
+        levelTimer = [NSTimer scheduledTimerWithTimeInterval: 0.1 target: self selector: @selector(levelTimerCallback:) userInfo: nil repeats: YES];
+        return YES;
+    }
+    else
+    {
+        NSLog(@"%@", [error description]);
+        return NO;
+    }
+}
+
+// 停止录音
++(void)stopRecord{
+    [levelTimer invalidate];
+    levelTimer = nil;
+    [recorder stop];
+    recorder = nil;
+}
+
+/* 该方法确实会随环境音量变化而变化，但具体分贝值是否准确暂时没有研究 */
++(void)levelTimerCallback:(NSTimer *)timer {
+    [recorder updateMeters];
+    
+    //averagePowerForChannel调用结果
+    
+    float avg = [recorder averagePowerForChannel:0];
+    
+    //比如把-60作为最低分贝
+    
+    float minValue = -60;
+    
+    //把60作为获取分配的范围
+    
+    float range = 60;
+    
+    //把100作为输出分贝范围
+    
+    float outRange = 100;
+    
+    //确保在最小值范围内
+    
+    if (avg < minValue)
+        
+    {
+        
+        avg = minValue;
+        
+    }
+    
+    //计算显示分贝
+    
+    float decibels = (avg + range) / range * outRange;
+    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.RecordManager.getInstance().onDbCallback(\"%f\");",decibels).c_str()));
 }
 
 // 获取设备型号然后手动转化为对应名称
