@@ -43,6 +43,7 @@ using namespace cocos2d;
 
 Application* app = nullptr;
 UIImageView * testImageView = nullptr;
+UIApplication * appli = nullptr;
 static AppController* _appController = nil;
 @synthesize window;
 
@@ -67,7 +68,7 @@ static AppController* _appController = nil;
     [window bringSubviewToFront:testImageView];
     
     [testImageView release];
-
+    appli = application;
     // cocos2d application instance
     app = new AppDelegate(bounds.size.width * scale, bounds.size.height * scale);
     app->setMultitouch(true);
@@ -104,6 +105,11 @@ static AppController* _appController = nil;
                                    selector:@selector(onLoadFinished)
                                    userInfo:nil
                                     repeats:NO];
+    return YES;
+}
+
+// 获取设备token
++ (void)getDeviceToken {
     // 推送
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 10.0) {
     UNUserNotificationCenter * center = [UNUserNotificationCenter currentNotificationCenter];
@@ -115,7 +121,7 @@ static AppController* _appController = nil;
     UIUserNotificationTypeSound |
     UIUserNotificationTypeAlert;
     UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:notificationTypes categories:nil];
-    [application registerUserNotificationSettings:settings];
+    [appli registerUserNotificationSettings:settings];
     }else{//ios8一下
     UIRemoteNotificationType notificationTypes = UIRemoteNotificationTypeBadge |
     UIRemoteNotificationTypeSound |
@@ -125,8 +131,7 @@ static AppController* _appController = nil;
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:0];
     // 注册获得device Token
      
-    [application registerForRemoteNotifications];
-    return YES;
+    [appli registerForRemoteNotifications];
 }
 
 // 将得到的deviceToken传给SDK
@@ -550,6 +555,7 @@ AVAudioRecorder *recorder;
     [[SDKWrapper getInstance] applicationWillTerminate:application];
     delete app;
     app = nil;
+    appli = nil;
 }
 
 
