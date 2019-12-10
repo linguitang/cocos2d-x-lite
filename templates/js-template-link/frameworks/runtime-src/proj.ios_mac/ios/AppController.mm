@@ -113,7 +113,7 @@ static AppController* _appController = nil;
     // 推送
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 10.0) {
     UNUserNotificationCenter * center = [UNUserNotificationCenter currentNotificationCenter];
-    [center setDelegate:self];
+    [center setDelegate:_appController];
     [center requestAuthorizationWithOptions:(UNAuthorizationOptionBadge|UNAuthorizationOptionSound|UNAuthorizationOptionAlert) completionHandler:^(BOOL granted, NSError * _Nullable error) {
     }];
     }else if ([[UIDevice currentDevice].systemVersion floatValue] >= 8.0){
