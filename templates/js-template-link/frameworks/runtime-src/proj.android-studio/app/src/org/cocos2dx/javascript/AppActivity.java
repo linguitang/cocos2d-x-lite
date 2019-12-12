@@ -290,6 +290,7 @@ public class AppActivity extends Cocos2dxActivity {
                     String getToken =  HmsInstanceId.getInstance(app.getApplicationContext()).getToken(appId, "HCM");
                     if (!TextUtils.isEmpty(getToken)) {
                         //TODO: Send token to your app server.
+                        app.sendPushTokenToUser(getToken);
                     }
                 } catch (Exception e) {
                     //Log.e(TAG, "getToken failed.", e);
