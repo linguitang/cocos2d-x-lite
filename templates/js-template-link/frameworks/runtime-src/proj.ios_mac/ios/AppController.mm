@@ -113,7 +113,7 @@ static AppController* _appController = nil;
 -(void)listenNetWorkingStatus{
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(reachabilityChanged:) name:kReachabilityChangedNotification object:nil];
      // 设置网络检测的站点
-     NSString *remoteHostName = @"www.apple.com";
+     NSString *remoteHostName = @"www.baidu.com";
  
      self.hostReachability = [ZHJReachability reachabilityWithHostName:remoteHostName];
      [self.hostReachability startNotifier];
