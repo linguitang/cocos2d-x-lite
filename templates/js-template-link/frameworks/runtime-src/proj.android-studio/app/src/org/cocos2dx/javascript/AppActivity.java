@@ -38,6 +38,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -72,6 +74,9 @@ import com.xiaomi.channel.commonutils.logger.LoggerInterface;
 import com.xiaomi.mipush.sdk.Logger;
 import com.xiaomi.mipush.sdk.MiPushClient;
 
+import static android.net.ConnectivityManager.TYPE_MOBILE;
+import static android.net.ConnectivityManager.TYPE_WIFI;
+
 
 public class AppActivity extends Cocos2dxActivity {
     public static IWXAPI api;//微信API接口
@@ -86,6 +91,8 @@ public class AppActivity extends Cocos2dxActivity {
     private MyReceiver receiver = null;
     private static MiPushHandler miPushHandler = null;
     private static AudioRecordDemo mAudioRecordDemo;
+    private IntentFilter intentFilter;
+    private NetworkChangeReceiver networkChangeReceiver;
     @SuppressLint("HandlerLeak")
     private static Handler mHandler = new Handler() {
         @SuppressWarnings("unused")
@@ -145,6 +152,11 @@ public class AppActivity extends Cocos2dxActivity {
         if (miPushHandler == null) {
             miPushHandler = new MiPushHandler(getApplicationContext());
         }
+
+        intentFilter = new IntentFilter();
+        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        networkChangeReceiver = new NetworkChangeReceiver();
+        registerReceiver(networkChangeReceiver, intentFilter);
     }
 
     // 开始录音
@@ -289,8 +301,8 @@ public class AppActivity extends Cocos2dxActivity {
                 try {
                     String getToken =  HmsInstanceId.getInstance(app.getApplicationContext()).getToken(appId, "HCM");
                     if (!TextUtils.isEmpty(getToken)) {
-                        //TODO: Send token to your app server.
                         app.sendPushTokenToUser(getToken);
+                        //TODO: Send token to your app server.
                     }
                 } catch (Exception e) {
                     //Log.e(TAG, "getToken failed.", e);
@@ -549,6 +561,7 @@ public class AppActivity extends Cocos2dxActivity {
     protected void onDestroy() {
         super.onDestroy();
         SDKWrapper.getInstance().onDestroy();
+        unregisterReceiver(networkChangeReceiver);
 
     }
 
@@ -640,6 +653,44 @@ public class AppActivity extends Cocos2dxActivity {
         public void handleMessage(Message msg) {
             String s = (String) msg.obj;
             app.sendPushTokenToUser(s);
+        }
+    }
+
+    class NetworkChangeReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isAvailable()) {
+                switch (networkInfo.getType()) {
+                    case TYPE_MOBILE:
+                        runOnGLThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Cocos2dxJavascriptJavaBridge.evalString("cc.DeviceManager.getInstance().networkChange(0)");
+                            }
+                        });
+                        break;
+                    case TYPE_WIFI:
+
+                        runOnGLThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Cocos2dxJavascriptJavaBridge.evalString("cc.DeviceManager.getInstance().networkChange(1)");
+                            }
+                        });
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                runOnGLThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Cocos2dxJavascriptJavaBridge.evalString("cc.DeviceManager.getInstance().networkChange(-1)");
+                    }
+                });
+            }
         }
     }
 }
