@@ -105,11 +105,66 @@ static AppController* _appController = nil;
                                    selector:@selector(onLoadFinished)
                                    userInfo:nil
                                     repeats:NO];
+    
+    [_appController listenNetWorkingStatus];
     return YES;
 }
 
+-(void)listenNetWorkingStatus{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(reachabilityChanged:) name:kReachabilityChangedNotification object:nil];
+     // 设置网络检测的站点
+     NSString *remoteHostName = @"www.apple.com";
+ 
+     self.hostReachability = [ZHJReachability reachabilityWithHostName:remoteHostName];
+     [self.hostReachability startNotifier];
+     [self updateInterfaceWithReachability:self.hostReachability];
+ 
+     self.internetReachability = [ZHJReachability reachabilityForInternetConnection];
+     [self.internetReachability startNotifier];
+     [self updateInterfaceWithReachability:self.internetReachability];
+}
+
+- (void) reachabilityChanged:(NSNotification *)note
+ {
+     ZHJReachability* curReach = [note object];
+     [self updateInterfaceWithReachability:curReach];
+ }
+ 
+bool hasInit = false;
+ - (void)updateInterfaceWithReachability:(ZHJReachability *)reachability
+ {
+     // 未初始化完的时候不推送不然会报错
+     if (hasInit == false){
+         return;
+     }
+     NetworkStatus netStatus = [reachability currentReachabilityStatus];
+     switch (netStatus) {
+       case 0:
+    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(-1);").c_str()));
+         break;
+ 
+       case 1:
+     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(1);").c_str()));
+         break;
+ 
+       case 2:
+     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(0);").c_str()));
+         break;
+ 
+       default:
+         break;
+ }
+ 
+ }
+ - (void)dealloc
+ {
+     [super dealloc];
+     [[NSNotificationCenter defaultCenter] removeObserver:self name:kReachabilityChangedNotification object:nil];
+ }
+
 // 获取设备token
 + (void)getDeviceToken {
+    hasInit = true;
     // 推送
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 10.0) {
     UNUserNotificationCenter * center = [UNUserNotificationCenter currentNotificationCenter];

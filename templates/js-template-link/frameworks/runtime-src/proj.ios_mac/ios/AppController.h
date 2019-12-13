@@ -26,6 +26,7 @@
 #import <UIKit/UIKit.h>
 #import "WXApi.h"
 #import <UserNotifications/UserNotifications.h>
+#import "ZHJReachability.h"
 
 @class RootViewController;
 
@@ -34,6 +35,7 @@
 }
 
 @property(nonatomic, readonly) RootViewController* viewController;
-
+@property (nonatomic) ZHJReachability *hostReachability;
+@property (nonatomic) ZHJReachability *internetReachability;  
 @end
 
