@@ -139,16 +139,13 @@ bool hasInit = false;
      }
      NetworkStatus netStatus = [reachability currentReachabilityStatus];
      switch (netStatus) {
-       case 0:
-    se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(-1);").c_str()));
+       case 0: se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(-1);").c_str()));
          break;
  
-       case 1:
-     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(1);").c_str()));
+       case 1: se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(1);").c_str()));
          break;
  
-       case 2:
-     se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(0);").c_str()));
+       case 2: se::ScriptEngine::getInstance()->evalString((cocos2d::StringUtils::format("cc.DeviceManager.getInstance().networkChange(0);").c_str()));
          break;
  
        default:
@@ -165,6 +162,15 @@ bool hasInit = false;
 // 获取设备token
 + (void)getDeviceToken {
     hasInit = true;
+    if ([[UIDevice currentDevice] systemVersion].floatValue > 7.0){
+        AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+        if ([audioSession respondsToSelector:@selector(requestRecordPermission:)]) {
+            [audioSession performSelector:@selector(requestRecordPermission:) withObject:^(BOOL granted) {
+
+            }];
+        }
+    }
+    
     // 推送
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 10.0) {
     UNUserNotificationCenter * center = [UNUserNotificationCenter currentNotificationCenter];
@@ -287,6 +293,12 @@ AVAudioRecorder *recorder;
     levelTimer = nil;
     [recorder stop];
     recorder = nil;
+}
+
+// 获取文件数据
++(NSString *)getFileData:(NSString*) path{
+    NSString* data = [[NSData dataWithContentsOfFile:path]base64EncodedStringWithOptions:0];
+    return data;
 }
 
 /* 该方法确实会随环境音量变化而变化，但具体分贝值是否准确暂时没有研究 */

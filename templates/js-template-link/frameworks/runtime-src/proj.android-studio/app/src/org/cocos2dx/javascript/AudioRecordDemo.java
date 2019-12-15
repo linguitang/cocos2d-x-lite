@@ -4,15 +4,11 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.util.Log;
-import org.cocos2dx.lib.Cocos2dxJavascriptJavaBridge;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
-import static org.cocos2dx.lib.Cocos2dxHelper.runOnGLThread;
 
 public class AudioRecordDemo {
 
@@ -23,11 +19,9 @@ public class AudioRecordDemo {
     AudioRecord mAudioRecord;
     AppActivity mAppActivty;
     boolean isGetVoiceRun;
-    Object mLock;
 
     public AudioRecordDemo(AppActivity appActivity) {
         mAppActivty = appActivity;
-        mLock = new Object();
     }
 
     public void stop() {
@@ -48,6 +42,7 @@ public class AudioRecordDemo {
         }
         isGetVoiceRun = true;
         final File tmpFile = createFile(path.replace(".wav",".pcm"));
+        createFile(path);
 
         new Thread(new Runnable() {
             @Override
@@ -69,22 +64,15 @@ public class AudioRecordDemo {
                         double mean = v / (double) r;
                         double volume = 10 * Math.log10(mean);
                         mAppActivty.recordCallback(volume);
-                        // 大概一秒十次
-                        synchronized (mLock) {
-                            try {
-                                mLock.wait(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
                     }
 
                     mAudioRecord.stop();
                     outputStream.close();
-                    pcmToWave(path.replace(".wav",".pcm"), path);
+                    pcmToWave(path.replace(".wav",".pcm"),path);
                     mAudioRecord.release();
                     mAudioRecord = null;
-                    tmpFile.delete();
+                    mAppActivty.recordEnd(path);
+                    //tmpFile.delete();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -99,6 +87,14 @@ public class AudioRecordDemo {
         File objFile = new File(filePath);
         if (!objFile.exists()) {
             try {
+                objFile.createNewFile();
+                return objFile;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                objFile.delete();
                 objFile.createNewFile();
                 return objFile;
             } catch (IOException e) {
@@ -207,4 +203,5 @@ public class AudioRecordDemo {
         header[43] = (byte) ((totalAudioLen >> 24) & 0xff);
         out.write(header, 0, 44);
     }
+
 }

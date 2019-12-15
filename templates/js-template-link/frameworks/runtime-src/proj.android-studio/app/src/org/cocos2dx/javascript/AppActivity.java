@@ -45,11 +45,11 @@ import android.os.Bundle;
 
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
@@ -57,6 +57,7 @@ import android.view.WindowManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -161,6 +162,10 @@ public class AppActivity extends Cocos2dxActivity {
 
     // 开始录音
     public static boolean startRecord(String path) {
+        if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED){
+            return false;
+        }
         if (mAudioRecordDemo == null) {
             mAudioRecordDemo = new AudioRecordDemo(app);
         }
@@ -173,6 +178,16 @@ public class AppActivity extends Cocos2dxActivity {
         if (mAudioRecordDemo != null) {
             mAudioRecordDemo.stop();
         }
+    }
+
+    // 录音结束
+    public void recordEnd(final String path){
+        runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxJavascriptJavaBridge.evalString(String.format("cc.RecordManager.getInstance().onRecordEnd(\"%s\");",path));
+            }
+        });
     }
 
     // 录音回调
@@ -198,6 +213,13 @@ public class AppActivity extends Cocos2dxActivity {
 
     // 获取小米推送token
     private static void getMiPushToken(String appId, String appKey){
+        if ( Build.VERSION.SDK_INT >= 23){
+            if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED){
+                app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+            }
+        }
+
         app.MiPushId = appId;
         app.MiPushKey = appKey;
         if (app.getSystemName() != SYS_MIUI && Build.VERSION.SDK_INT >= 23){
@@ -292,6 +314,12 @@ public class AppActivity extends Cocos2dxActivity {
      * 获取token
      */
     public static void getHuaWeiToken(final String appId) {
+        if ( Build.VERSION.SDK_INT >= 23){
+            if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED){
+                app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+            }
+        }
 
         HmsInstanceId inst  = HmsInstanceId.getInstance(app.getApplicationContext());
         // get token
@@ -547,6 +575,22 @@ public class AppActivity extends Cocos2dxActivity {
         req.scene = SendMessageToWX.Req.WXSceneTimeline;
         api.sendReq(req);
         return true;
+    }
+
+    // 读文件内容
+    public static String getFileData(String path){
+        String data = "";
+        try{
+            File  file = new File(path);
+            FileInputStream inputFile = new FileInputStream(file);
+            byte[] buffer = new byte[(int)file.length()];
+            inputFile.read(buffer);
+            inputFile.close();
+            data = Base64.encodeToString(buffer,Base64.DEFAULT);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return data;
     }
 
 
