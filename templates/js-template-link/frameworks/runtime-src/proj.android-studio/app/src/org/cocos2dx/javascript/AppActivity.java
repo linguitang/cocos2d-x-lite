@@ -212,11 +212,13 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 获取小米推送token
-    private static void getMiPushToken(String appId, String appKey){
+    private static boolean getMiPushToken(String appId, String appKey){
+        boolean hasPermission = true;
         if ( Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
                     != PackageManager.PERMISSION_GRANTED){
                 app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+                hasPermission = false;
             }
         }
 
@@ -227,10 +229,11 @@ public class AppActivity extends Cocos2dxActivity {
                     != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
                     != PackageManager.PERMISSION_GRANTED){
                 app.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_PHONE_STATE}, 1);
-                return;
+                return false;
             }
         }
         app.initMiPush();
+        return hasPermission;
     }
 
     // 初始化小米推送
@@ -267,7 +270,7 @@ public class AppActivity extends Cocos2dxActivity {
                         if (ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                 == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
                                 == PackageManager.PERMISSION_GRANTED) {
-                           this.initMiPush();
+                            this.initMiPush();
                             return;
                         }
                     }
@@ -313,11 +316,13 @@ public class AppActivity extends Cocos2dxActivity {
     /**
      * 获取token
      */
-    public static void getHuaWeiToken(final String appId) {
+    public static boolean getHuaWeiToken(final String appId) {
+        boolean hasPermission = true;
         if ( Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
                     != PackageManager.PERMISSION_GRANTED){
                 app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+                hasPermission = false;
             }
         }
 
@@ -337,6 +342,7 @@ public class AppActivity extends Cocos2dxActivity {
                 }
             }
         }.start();
+        return hasPermission;
     }
 
     /**
@@ -486,7 +492,7 @@ public class AppActivity extends Cocos2dxActivity {
 
     // 微信支付
     public static boolean weChatPay(String appid, String partnerid, String prepayid, String packageValue,
-                                String noncestr, String timeStamp, String sign, String orderId) {
+                                    String noncestr, String timeStamp, String sign, String orderId) {
 
         api = WXAPIFactory.createWXAPI(app, appid, true);
         api.registerApp(appid);
