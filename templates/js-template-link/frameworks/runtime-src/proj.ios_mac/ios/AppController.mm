@@ -293,7 +293,7 @@ AVAudioRecorder *recorder;
     levelTimer = nil;
     [recorder stop];
     recorder = nil;
-    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
+    [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
 }
 
 // 获取文件数据
