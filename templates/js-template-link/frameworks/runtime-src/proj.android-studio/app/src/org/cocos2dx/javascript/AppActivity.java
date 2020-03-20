@@ -271,15 +271,18 @@ public class AppActivity extends Cocos2dxActivity {
                                 == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
                                 == PackageManager.PERMISSION_GRANTED) {
                             this.initMiPush();
-                            return;
                         }
                     }
                     //startOpenPhoto();
                 }
                 break;
-
-
         }
+        runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxJavascriptJavaBridge.evalString("cc.DeviceManager.getInstance().permissionRequestEnd()");
+            }
+        });
     }
 
     private boolean shouldInit() {
