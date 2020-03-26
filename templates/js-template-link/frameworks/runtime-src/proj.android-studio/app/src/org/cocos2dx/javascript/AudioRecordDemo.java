@@ -52,6 +52,9 @@ public class AudioRecordDemo {
                     FileOutputStream outputStream = new FileOutputStream(tmpFile.getAbsoluteFile());
                     byte[] buffer = new byte[BUFFER_SIZE];
                     while (isGetVoiceRun) {
+                        if (mAudioRecord == null) {
+                            return;
+                        }
                         //r是实际读取的数据长度，一般而言r会小于buffersize
                         int r = mAudioRecord.read(buffer, 0, BUFFER_SIZE);
                         outputStream.write(buffer);
