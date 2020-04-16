@@ -47,6 +47,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -212,13 +213,15 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 获取小米推送token
-    private static boolean getMiPushToken(String appId, String appKey){
+    private static boolean getMiPushToken(String appId, String appKey,Boolean firstLaunchGame){
         boolean hasPermission = true;
         if ( Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
                     != PackageManager.PERMISSION_GRANTED){
-                app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
-                hasPermission = false;
+                 if ((!ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.RECORD_AUDIO) && firstLaunchGame)|| ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.RECORD_AUDIO)) {
+                    app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+                    hasPermission = false;
+                 }
             }
         }
 
@@ -226,10 +229,18 @@ public class AppActivity extends Cocos2dxActivity {
         app.MiPushKey = appKey;
         if (app.getSystemName() != SYS_MIUI && Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
                     != PackageManager.PERMISSION_GRANTED){
-                app.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_PHONE_STATE}, 1);
-                return false;
+                 if ((!ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.WRITE_EXTERNAL_STORAGE) && firstLaunchGame)|| ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    app.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    hasPermission = false;
+                 }
+            }
+            if (ContextCompat.checkSelfPermission(app, Manifest.permission.READ_PHONE_STATE)
+                    != PackageManager.PERMISSION_GRANTED){
+                 if ((!ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.READ_PHONE_STATE) && firstLaunchGame)||ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.READ_PHONE_STATE)) {
+                    app.requestPermissions(new String[]{Manifest.permission.READ_PHONE_STATE}, 1);
+                    hasPermission = false;
+                 }
             }
         }
         app.initMiPush();
@@ -319,13 +330,15 @@ public class AppActivity extends Cocos2dxActivity {
     /**
      * 获取token
      */
-    public static boolean getHuaWeiToken(final String appId) {
+    public static boolean getHuaWeiToken(final String appId,final Boolean firstLaunchGame) {
         boolean hasPermission = true;
         if ( Build.VERSION.SDK_INT >= 23){
             if (ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO)
                     != PackageManager.PERMISSION_GRANTED){
-                app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
-                hasPermission = false;
+                if ((!ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.RECORD_AUDIO) && firstLaunchGame)||ActivityCompat.shouldShowRequestPermissionRationale(app, Manifest.permission.RECORD_AUDIO)) {
+                    app.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+                    hasPermission = false;
+                 }
             }
         }
 
