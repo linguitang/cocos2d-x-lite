@@ -32,6 +32,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -54,6 +55,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
+import android.os.Vibrator;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -91,6 +93,7 @@ public class AppActivity extends Cocos2dxActivity {
     private String MiPushId;
     private String MiPushKey;
     private MyReceiver receiver = null;
+    private static Vibrator vibrator;
     private static MiPushHandler miPushHandler = null;
     private static AudioRecordDemo mAudioRecordDemo;
     private IntentFilter intentFilter;
@@ -145,6 +148,7 @@ public class AppActivity extends Cocos2dxActivity {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         app = this;
+        vibrator = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
         if (receiver == null){
             receiver = new MyReceiver();
             IntentFilter filter = new IntentFilter();
@@ -159,6 +163,11 @@ public class AppActivity extends Cocos2dxActivity {
         intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         networkChangeReceiver = new NetworkChangeReceiver();
         registerReceiver(networkChangeReceiver, intentFilter);
+    }
+
+    // 开始震动
+    public static void startVibrator(int time) {
+        vibrator.vibrate(time);
     }
 
     // 开始录音

@@ -35,6 +35,7 @@
 #import "WXApiManager.h"
 #include "cocos/scripting/js-bindings/jswrapper/SeApi.h"
 #import<AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h>
 
 
 using namespace cocos2d;
@@ -252,6 +253,11 @@ AVAudioRecorder *recorder;
     AVAudioSession *session = [AVAudioSession sharedInstance];
     [session setActive:YES error:nil];
     [session setCategory:AVAudioSessionCategoryPlayAndRecord withOptions:AVAudioSessionCategoryOptionMixWithOthers|AVAudioSessionCategoryOptionDefaultToSpeaker error:nil];
+}
+
+// 开始震动
++(void)startVibrator{
+    AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
 }
 
 // 开始录音
