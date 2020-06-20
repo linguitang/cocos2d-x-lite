@@ -496,7 +496,7 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 支付宝支付
-    public static void aliPay(String info){
+    public static void zhiFuPay(String info){
         final String orderInfo = info;   // 订单信息
         Runnable payRunnable = new Runnable() {
 
@@ -516,7 +516,7 @@ public class AppActivity extends Cocos2dxActivity {
     }
 
     // 微信支付
-    public static boolean weChatPay(String appid, String partnerid, String prepayid, String packageValue,
+    public static boolean weiPay(String appid, String partnerid, String prepayid, String packageValue,
                                     String noncestr, String timeStamp, String sign, String orderId) {
 
         api = WXAPIFactory.createWXAPI(app, appid, true);
