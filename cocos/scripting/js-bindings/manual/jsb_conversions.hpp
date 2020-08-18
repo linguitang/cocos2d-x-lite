@@ -118,6 +118,7 @@ bool sevals_variadic_to_ccvaluevector(const se::ValueArray& args, cocos2d::Value
 bool seval_to_blendfunc(const se::Value& v, cocos2d::BlendFunc* ret);
 bool seval_to_std_vector_string(const se::Value& v, std::vector<std::string>* ret);
 bool seval_to_std_vector_int(const se::Value& v, std::vector<int>* ret);
+bool seval_to_std_vector_uint16(const se::Value& v, std::vector<uint16_t>* ret);
 bool seval_to_std_vector_float(const se::Value& v, std::vector<float>* ret);
 bool seval_to_std_vector_Vec2(const se::Value& v, std::vector<cocos2d::Vec2>* ret);
 //bool seval_to_Rect(const se::Value& v, cocos2d::Rect* rect);
@@ -138,19 +139,21 @@ bool seval_to_DownloaderHints(const se::Value& v, cocos2d::network::DownloaderHi
 
 #if USE_GFX_RENDERER
 bool seval_to_Rect(const se::Value& v, cocos2d::renderer::Rect* rect);
-bool seval_to_std_vector_Pass(const se::Value& v, cocos2d::Vector<cocos2d::renderer::Pass*>* ret);
 bool seval_to_std_vector_Texture(const se::Value& v, std::vector<cocos2d::renderer::Texture*>* ret);
 bool seval_to_std_vector_RenderTarget(const se::Value& v, std::vector<cocos2d::renderer::RenderTarget*>* ret);
 bool seval_to_TextureOptions(const se::Value& v, cocos2d::renderer::Texture::Options* ret);
 bool seval_to_TextureSubImageOption(const se::Value& v, cocos2d::renderer::Texture::SubImageOption* ret);
 bool seval_to_TextureImageOption(const se::Value& v, cocos2d::renderer::Texture::ImageOption* ret);
-bool seval_to_EffectProperty(const cocos2d::Vector<cocos2d::renderer::Technique *>& techniqes, const se::Value& v, std::unordered_map<std::string, cocos2d::renderer::Effect::Property>* ret);
+bool seval_to_EffectProperty(const se::Value& v, std::unordered_map<size_t, cocos2d::renderer::Effect::Property>* ret);
+bool seval_to_EffectTechnique(const se::Value& v, cocos2d::renderer::Technique** ret);
 bool seval_to_EffectDefineTemplate(const se::Value& v, std::vector<cocos2d::ValueMap>* ret);
-bool seval_to_TechniqueParameter_not_constructor(const se::Value& v, cocos2d::renderer::Technique::Parameter* ret);
+bool seval_to_Effect_setProperty(std::string& name, const se::Value& v, cocos2d::renderer::EffectBase* effect, int passIdx = -1, bool directly = false);
 bool seval_to_TechniqueParameter(const se::Value& v, cocos2d::renderer::Technique::Parameter* ret);
 bool seval_to_std_vector_TechniqueParameter(const se::Value& v, std::vector<cocos2d::renderer::Technique::Parameter>* ret);
 bool seval_to_std_vector_ProgramLib_Template(const se::Value& v, std::vector<cocos2d::renderer::ProgramLib::Template>* ret);
 bool std_vector_RenderTarget_to_seval(const std::vector<cocos2d::renderer::RenderTarget*>& v, se::Value* ret);
+bool seval_to_EffectAsset(const se::Value& v, cocos2d::Vector<cocos2d::renderer::Technique*>* ret);
+bool ccvaluevector_to_EffectPass(const cocos2d::ValueVector& v, cocos2d::Vector<cocos2d::renderer::Pass*>* passes);
 #endif
 
 template<typename T>
@@ -267,6 +270,7 @@ bool long_to_seval(long v, se::Value* ret);
 bool ulong_to_seval(unsigned long v, se::Value* ret);
 bool longlong_to_seval(long long v, se::Value* ret);
 bool ssize_to_seval(ssize_t v, se::Value* ret);
+bool size_to_seval(size_t v, se::Value* ret);
 bool std_string_to_seval(const std::string& v, se::Value* ret);
 
 bool Vec2_to_seval(const cocos2d::Vec2& v, se::Value* ret);
@@ -274,7 +278,7 @@ bool Vec3_to_seval(const cocos2d::Vec3& v, se::Value* ret);
 bool Vec4_to_seval(const cocos2d::Vec4& v, se::Value* ret);
 bool Mat4_to_seval(const cocos2d::Mat4& v, se::Value* ret);
 bool Size_to_seval(const cocos2d::Size& v, se::Value* ret);
-//bool Rect_to_seval(const cocos2d::Rect& v, se::Value* ret);
+bool Rect_to_seval(const cocos2d::Rect& v, se::Value* ret);
 bool Color3B_to_seval(const cocos2d::Color3B& v, se::Value* ret);
 bool Color4B_to_seval(const cocos2d::Color4B& v, se::Value* ret);
 bool Color3F_to_seval(const cocos2d::Color3F& v, se::Value* ret);
@@ -286,6 +290,7 @@ bool ccvaluevector_to_seval(const cocos2d::ValueVector& v, se::Value* ret);
 bool blendfunc_to_seval(const cocos2d::BlendFunc& v, se::Value* ret);
 bool std_vector_string_to_seval(const std::vector<std::string>& v, se::Value* ret);
 bool std_vector_int_to_seval(const std::vector<int>& v, se::Value* ret);
+bool std_vector_uint16_to_seval(const std::vector<uint16_t>& v, se::Value* ret);
 bool std_vector_float_to_seval(const std::vector<float>& v, se::Value* ret);
 //bool std_vector_Touch_to_seval(const std::vector<cocos2d::Touch*>& v, se::Value* ret);
 bool std_map_string_string_to_seval(const std::map<std::string, std::string>& v, se::Value* ret);
@@ -347,7 +352,7 @@ bool native_ptr_to_seval(typename std::enable_if<!std::is_base_of<cocos2d::Ref,T
 }
 
 template<typename T>
-bool native_ptr_to_rooted_seval(typename std::enable_if<!std::is_base_of<cocos2d::Ref,T>::value,T>::type* v, se::Value* ret, bool* isReturnCachedValue = nullptr)
+bool native_ptr_to_rooted_seval(const typename std::enable_if<!std::is_base_of<cocos2d::Ref,T>::value,T>::type* v, se::Value* ret, bool* isReturnCachedValue = nullptr)
 {
     assert(ret != nullptr);
     if (v == nullptr)
@@ -357,14 +362,14 @@ bool native_ptr_to_rooted_seval(typename std::enable_if<!std::is_base_of<cocos2d
     }
 
     se::Object* obj = nullptr;
-    auto iter = se::NativePtrToObjectMap::find(v);
+    auto iter = se::NativePtrToObjectMap::find((void*)v);
     if (iter == se::NativePtrToObjectMap::end())
     { // If we couldn't find native object in map, then the native object is created from native code. e.g. TMXLayer::getTileAt
         se::Class* cls = JSBClassType::findClass<T>(v);
         assert(cls != nullptr);
         obj = se::Object::createObjectWithClass(cls);
         obj->root();
-        obj->setPrivateData(v);
+        obj->setPrivateData((void*)v);
 
         if (isReturnCachedValue != nullptr)
         {
@@ -584,18 +589,91 @@ bool Vector_to_seval(const cocos2d::Vector<T*>& v, se::Value* ret)
 
 // Spine conversions
 #if USE_SPINE
-bool speventdata_to_seval(const spEventData* v, se::Value* ret);
-bool spevent_to_seval(const spEvent* v, se::Value* ret);
-bool spbonedata_to_seval(const spBoneData* v, se::Value* ret);
-bool spbone_to_seval(const spBone* v, se::Value* ret);
-bool spskeleton_to_seval(const spSkeleton* v, se::Value* ret);
-bool spattachment_to_seval(const spAttachment* v, se::Value* ret);
-bool spslotdata_to_seval(const spSlotData* v, se::Value* ret);
-bool spslot_to_seval(const spSlot* v, se::Value* ret);
-bool sptimeline_to_seval(const spTimeline* v, se::Value* ret);
-bool spanimationstate_to_seval(const spAnimationState* v, se::Value* ret);
-bool spanimation_to_seval(const spAnimation* v, se::Value* ret);
-bool sptrackentry_to_seval(const spTrackEntry* v, se::Value* ret);
+
+template<typename T>
+bool spine_Vector_T_to_seval(const spine::Vector<T>& v, se::Value* ret)
+{
+    assert(ret != nullptr);
+    se::HandleObject obj(se::Object::createArrayObject(v.size()));
+    bool ok = true;
+    
+    spine::Vector<T> tmpv = v;
+    for (uint32_t i = 0, count = (uint32_t)tmpv.size(); i < count; i++)
+    {
+        if (!obj->setArrayElement(i, se::Value(tmpv[i])))
+        {
+            ok = false;
+            ret->setUndefined();
+            break;
+        }
+    }
+    
+    if (ok)
+    ret->setObject(obj);
+    
+    return ok;
+}
+
+template<typename T>
+bool spine_Vector_T_ptr_to_seval(const spine::Vector<T*>& v, se::Value* ret)
+{
+    assert(ret != nullptr);
+    se::HandleObject obj(se::Object::createArrayObject(v.size()));
+    bool ok = true;
+    
+    spine::Vector<T*> tmpv = v;
+    for (uint32_t i = 0, count = (uint32_t)tmpv.size(); i < count; i++)
+    {
+        se::Value tmp;
+        ok = native_ptr_to_rooted_seval<T>(tmpv[i], &tmp);
+        if (!ok || !obj->setArrayElement(i, tmp))
+        {
+            ok = false;
+            ret->setUndefined();
+            break;
+        }
+    }
+    
+    if (ok) ret->setObject(obj);
+    return ok;
+}
+
+template<typename T>
+bool seval_to_spine_Vector_T_ptr(const se::Value& v, spine::Vector<T*>* ret)
+{
+    assert(ret != nullptr);
+    assert(v.isObject());
+    se::Object* obj = v.toObject();
+    assert(obj->isArray());
+    
+    bool ok = true;
+    uint32_t len = 0;
+    ok = obj->getArrayLength(&len);
+    if (!ok)
+    {
+        ret->clear();
+        return false;
+    }
+    
+    se::Value tmp;
+    for (uint32_t i = 0; i < len; ++i)
+    {
+        ok = obj->getArrayElement(i, &tmp);
+        if (!ok || !tmp.isObject())
+        {
+            ret->clear();
+            return false;
+        }
+        
+        T* nativeObj = (T*)tmp.toObject()->getPrivateData();
+        ret->add(nativeObj);
+    }
+    
+    return true;
+}
+
+bool seval_to_spine_Vector_String(const se::Value& v, spine::Vector<spine::String>* ret);
+bool spine_Vector_String_to_seval(const spine::Vector<spine::String>& v, se::Value* ret);
 #endif
 
 //

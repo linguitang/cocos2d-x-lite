@@ -235,6 +235,11 @@ InspectorIo::~InspectorIo() {
   uv_sem_destroy(&thread_start_sem_);
   uv_close(reinterpret_cast<uv_handle_t*>(&main_thread_req_->first),
            ReleasePairOnAsyncClose);
+  if (main_thread_req_)
+  {
+      delete main_thread_req_;
+      main_thread_req_ = nullptr;
+  }
 }
 
 bool InspectorIo::Start() {

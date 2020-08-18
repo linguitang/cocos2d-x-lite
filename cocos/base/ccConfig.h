@@ -39,7 +39,7 @@ THE SOFTWARE.
 // disable module if you didn't need it, this will reduce package size
 
 #ifndef USE_GFX_RENDERER
-#define USE_GFX_RENDERER 0
+#define USE_GFX_RENDERER 1
 #endif
 
 #ifndef USE_VIDEO
@@ -58,9 +58,15 @@ THE SOFTWARE.
 #define USE_SOCKET 1
 #endif
 
+#ifndef USE_WEBSOCKET_SERVER
+#define USE_WEBSOCKET_SERVER 0
+#endif
+
 #ifndef USE_MIDDLEWARE
 #define USE_MIDDLEWARE 1
 #endif
+
+#if USE_GFX_RENDERER > 0 && USE_MIDDLEWARE > 0
 
 #ifndef USE_SPINE
 #define USE_SPINE 1
@@ -69,6 +75,12 @@ THE SOFTWARE.
 #ifndef USE_DRAGONBONES
 #define USE_DRAGONBONES 1
 #endif
+
+#ifndef USE_PARTICLE
+#define USE_PARTICLE 1
+#endif
+
+#endif // endif middleware
 
 /** @def CC_ENABLE_STACKABLE_ACTIONS
  * If enabled, actions that alter the position property (eg: MoveBy, JumpBy, BezierBy, etc..) will be stacked.
@@ -400,5 +412,13 @@ THE SOFTWARE.
 #ifndef CC_ENABLE_PREMULTIPLIED_ALPHA
 # define CC_ENABLE_PREMULTIPLIED_ALPHA 1
 #endif
+
+#ifndef CC_ENABLE_TTF_LABEL_RENDERER
+# define CC_ENABLE_TTF_LABEL_RENDERER 1
+#endif
+
+#ifndef CC_ENABLE_CACHE_TTF_FONT_TEXTURE
+# define CC_ENABLE_CACHE_TTF_FONT_TEXTURE 1
+#endif 
 
 #endif // __CCCONFIG_H__

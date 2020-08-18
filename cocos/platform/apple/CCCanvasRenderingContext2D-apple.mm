@@ -1,6 +1,7 @@
 #include "platform/CCCanvasRenderingContext2D.h"
 #include "base/ccTypes.h"
 #include "base/csscolorparser.hpp"
+#include "base/ccUTF8.h"
 
 #include "cocos/scripting/js-bindings/jswrapper/SeApi.h"
 #include "cocos/scripting/js-bindings/manual/jsb_platform.h"
@@ -271,9 +272,6 @@ enum class CanvasTextBaseline {
 
     NSSize dim = [stringWithAttributes boundingRectWithSize:textRect options:(NSStringDrawingOptions)(NSStringDrawingUsesLineFragmentOrigin) context:nil].size;
 
-    dim.width = ceilf(dim.width);
-    dim.height = ceilf(dim.height);
-
     return dim;
 }
 
@@ -540,11 +538,14 @@ namespace
     }
 }
 
-#define SEND_DATA_TO_JS(CB, IMPL) \
+#define SEND_DATA_TO_JS(CB, IMPL, PREMULTIPLY) \
 if (CB) \
 { \
     Data data([IMPL getDataRef]); \
-    unMultiplyAlpha(data.getBytes(), data.getSize() ); \
+    if (!PREMULTIPLY) \
+    { \
+        unMultiplyAlpha(data.getBytes(), data.getSize() ); \
+    } \
     CB(data); \
 }
 
@@ -570,7 +571,7 @@ void CanvasRenderingContext2D::recreateBufferIfNeeded()
         _isBufferSizeDirty = false;
 //        SE_LOGD("CanvasRenderingContext2D::recreateBufferIfNeeded %p, w: %f, h:%f\n", this, __width, __height);
         [_impl recreateBufferWithWidth: __width height:__height];
-        SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl);
+        SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl, _premultiply);
     }
 }
 
@@ -585,7 +586,7 @@ void CanvasRenderingContext2D::fillRect(float x, float y, float width, float hei
 {
     recreateBufferIfNeeded();
     [_impl fillRect:CGRectMake(x, y, width, height)];
-    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl);
+    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl, _premultiply);
 }
 
 void CanvasRenderingContext2D::fillText(const std::string& text, float x, float y, float maxWidth)
@@ -596,8 +597,14 @@ void CanvasRenderingContext2D::fillText(const std::string& text, float x, float 
 
     recreateBufferIfNeeded();
 
-    [_impl fillText:[NSString stringWithUTF8String:text.c_str()] x:x y:y maxWidth:maxWidth];
-    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl);
+    auto textUtf8 = [NSString stringWithUTF8String:text.c_str()];
+    if(textUtf8 == nullptr) {
+        SE_LOGE("CanvasRenderingContext2D::fillText failed to convert text to UTF8\n  text:\"%s\"", text.c_str());
+        return;
+    }
+    
+    [_impl fillText:textUtf8 x:x y:y maxWidth:maxWidth];
+    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl, _premultiply);
 }
 
 void CanvasRenderingContext2D::strokeText(const std::string& text, float x, float y, float maxWidth)
@@ -607,14 +614,25 @@ void CanvasRenderingContext2D::strokeText(const std::string& text, float x, floa
         return;
     recreateBufferIfNeeded();
 
-    [_impl strokeText:[NSString stringWithUTF8String:text.c_str()] x:x y:y maxWidth:maxWidth];
-    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl);
+    auto textUtf8 = [NSString stringWithUTF8String:text.c_str()];
+    if(textUtf8 == nullptr) {
+        SE_LOGE("CanvasRenderingContext2D::strokeText failed to convert text to UTF8\n  text:\"%s\"", text.c_str());
+        return;
+    }
+    
+    [_impl strokeText:textUtf8 x:x y:y maxWidth:maxWidth];
+    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl, _premultiply);
 }
 
 cocos2d::Size CanvasRenderingContext2D::measureText(const std::string& text)
 {
-//    SE_LOGD("CanvasRenderingContext2D::measureText: %s\n", text.c_str());
-    CGSize size = [_impl measureText: [NSString stringWithUTF8String:text.c_str()]];
+    NSString *str =[NSString stringWithUTF8String:text.c_str()];
+    if(str == nil) {
+        std::string textNew;
+        cocos2d::StringUtils::UTF8LooseFix(text, textNew);
+        str = [NSString stringWithUTF8String:textNew.c_str()];
+    }
+    CGSize size = [_impl measureText: str];
     return cocos2d::Size(size.width, size.height);
 }
 
@@ -651,7 +669,7 @@ void CanvasRenderingContext2D::lineTo(float x, float y)
 void CanvasRenderingContext2D::stroke()
 {
     [_impl stroke];
-    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl);
+    SEND_DATA_TO_JS(_canvasBufferUpdatedCB, _impl, _premultiply);
 }
 
 void CanvasRenderingContext2D::fill()
@@ -672,6 +690,11 @@ void CanvasRenderingContext2D::restore()
 void CanvasRenderingContext2D::setCanvasBufferUpdatedCallback(const CanvasBufferUpdatedCallback& cb)
 {
     _canvasBufferUpdatedCB = cb;
+}
+
+void CanvasRenderingContext2D::setPremultiply(bool multiply)
+{
+    _premultiply = multiply;
 }
 
 void CanvasRenderingContext2D::set__width(float width)

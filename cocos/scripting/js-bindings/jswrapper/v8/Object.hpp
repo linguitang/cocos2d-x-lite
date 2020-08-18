@@ -33,6 +33,8 @@
 #include "../Value.hpp"
 #include "ObjectWrap.h"
 
+#include <memory>
+
 namespace se {
 
     class Class;
@@ -145,6 +147,13 @@ namespace se {
          *  @return true if the property is set successfully, otherwise false.
          */
         bool setProperty(const char *name, const Value& value);
+
+        /**
+         *  @brief Delete a property of an object.
+         *  @param[in] name A utf-8 string containing the property's name.
+         *  @return true if the property is deleted successfully, otherwise false.
+         */
+        bool deleteProperty(const char *name);
 
         /**
          *  @brief Defines a property with native accessor callbacks for an object.
@@ -373,6 +382,7 @@ namespace se {
         static void nativeObjectFinalizeHook(void* nativeObj);
         static void setIsolate(v8::Isolate* isolate);
         static void cleanup();
+        static void setup();
 
         Object();
         virtual ~Object();
@@ -390,7 +400,7 @@ namespace se {
         friend class ScriptEngine;
     };
 
-    extern std::unordered_map<Object*, void*> __objectMap; // Currently, the value `void*` is always nullptr
+    extern std::unique_ptr<std::unordered_map<Object*, void*>> __objectMap; // Currently, the value `void*` is always nullptr
 
 } // namespace se {
 

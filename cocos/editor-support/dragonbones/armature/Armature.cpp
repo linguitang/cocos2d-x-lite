@@ -273,6 +273,23 @@ void Armature::advanceTime(float passedTime)
     _proxy->dbUpdate();
 }
 
+void Armature::render()
+{
+    if (_proxy)
+    {
+        _proxy->dbRender();
+    }
+}
+
+uint32_t Armature::getRenderOrder() const
+{
+    if (_proxy)
+    {
+        return _proxy->getRenderOrder();
+    }
+    return 0;
+}
+
 void Armature::invalidUpdate(const std::string& boneName, bool updateSlot)
 {
     if (!boneName.empty())

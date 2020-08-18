@@ -185,6 +185,13 @@ namespace
 
 - (void) layoutSubviews
 {
+    // On some devices with iOS13, `[_context renderbufferStorage:GL_RENDERBUFFER fromDrawable:(CAEAGLLayer *)self.layer]`
+    // will return false if lock screen when running application, which make framebuffer in invalid state.
+    // FIXME: do binding framebuffer in other place?
+    UIApplicationState state = [[UIApplication sharedApplication] applicationState];
+    if (state == UIApplicationStateBackground)
+        return;
+
     glBindFramebuffer(GL_FRAMEBUFFER, _defaultFramebuffer);
     if (_defaultColorBuffer)
     {
@@ -246,6 +253,11 @@ namespace
     _needToPreventTouch = flag;
 }
 
+-(EAGLContext*) getContext
+{
+    return _context;
+}
+
 - (void) setupGLContext
 {
     CAEAGLLayer *eaglLayer = (CAEAGLLayer *)self.layer;
@@ -256,9 +268,17 @@ namespace
                                     _pixelformatString, kEAGLDrawablePropertyColorFormat, nil];
     
     if(! _sharegroup)
-        _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    {
+        _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+        if (!_context)
+            _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    }
     else
-        _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2 sharegroup:_sharegroup];
+    {
+        _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup:_sharegroup];
+        if (!_context)
+            _context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2 sharegroup:_sharegroup];
+    }
     
     if (!_context || ![EAGLContext setCurrentContext:_context] )
     {
@@ -472,11 +492,12 @@ namespace
     cocos2d::TouchInfo createTouchInfo(int index, UITouch* touch, float contentScaleFactor)
     {
         uint8_t deviceRatio = cocos2d::Application::getInstance()->getDevicePixelRatio();
+        // TouchInfo should located in UI coordinate system, not GL pixels
+        // It will be converted to display position later in View.convertToLocationInView
         cocos2d::TouchInfo touchInfo;
         touchInfo.index = index;
-        touchInfo.x = [touch locationInView: [touch view]].x * contentScaleFactor / deviceRatio;
-        touchInfo.y = [touch locationInView: [touch view]].y * contentScaleFactor / deviceRatio;
-        
+        touchInfo.x = [touch locationInView: [touch view]].x / deviceRatio;
+        touchInfo.y = [touch locationInView: [touch view]].y / deviceRatio;
         return touchInfo;
     }
     

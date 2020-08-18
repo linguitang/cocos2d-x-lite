@@ -24,7 +24,7 @@
 #include "MiddlewareManager.h"
 #include "base/CCGLUtils.h"
 #include "scripting/js-bindings/jswrapper/SeApi.h"
-#include "RenderInfoMgr.h"
+#include <algorithm>
 
 MIDDLEWARE_BEGIN
     
@@ -59,31 +59,28 @@ MeshBuffer* MiddlewareManager::getMeshBuffer(int format)
     return mb;
 }
 
-void MiddlewareManager::update(float dt)
+void MiddlewareManager::_clearRemoveList()
 {
-    for (auto it : _mbMap)
+    for (std::size_t i = 0; i < _removeList.size(); i++)
     {
-        auto buffer = it.second;
-        if (buffer)
+        auto editor = _removeList[i];
+        auto it = std::find(_updateList.begin(), _updateList.end(), editor);
+        if (it != _updateList.end())
         {
-            buffer->reset();
+            _updateList.erase(it);
         }
     }
     
-    // reset render info
-    auto renderInfoMgr = RenderInfoMgr::getInstance();
-    renderInfoMgr->reset();
-    auto renderInfo = renderInfoMgr->getBuffer();
-    if (renderInfo)
-    {
-        renderInfo->writeUint32(0);
-    }
-    
+    _removeList.clear();
+}
+
+void MiddlewareManager::update(float dt)
+{
     isUpdating = true;
     
-    for (auto it = _updateMap.begin(); it != _updateMap.end(); it++)
+    for (std::size_t i = 0, n = _updateList.size(); i < n; i++)
     {
-        auto editor = it->first;
+        auto editor = _updateList[i];
         if (_removeList.size() > 0)
         {
             auto removeIt = std::find(_removeList.begin(), _removeList.end(), editor);
@@ -100,17 +97,54 @@ void MiddlewareManager::update(float dt)
     
     isUpdating = false;
     
-    for (std::size_t i = 0; i < _removeList.size(); i++)
+    _clearRemoveList();
+}
+
+void MiddlewareManager::render(float dt)
+{
+    for (auto it : _mbMap)
     {
-        auto editor = _removeList[i];
-        auto it = _updateMap.find(editor);
-        if (it != _updateMap.end())
+        auto buffer = it.second;
+        if (buffer)
         {
-            _updateMap.erase(it);
+            buffer->reset();
         }
     }
     
-    _removeList.clear();
+    isRendering = true;
+    
+    auto isOrderDirty = false;
+    uint32_t maxRenderOrder = 0;
+    for (std::size_t i = 0, n = _updateList.size(); i < n; i++)
+    {
+        auto editor = _updateList[i];
+        uint32_t renderOrder = maxRenderOrder;
+        if (_removeList.size() > 0)
+        {
+            auto removeIt = std::find(_removeList.begin(), _removeList.end(), editor);
+            if (removeIt == _removeList.end())
+            {
+                editor->render(dt);
+                renderOrder = editor->getRenderOrder();
+            }
+        }
+        else
+        {
+            editor->render(dt);
+            renderOrder = editor->getRenderOrder();
+        }
+        
+        if (maxRenderOrder > renderOrder)
+        {
+            isOrderDirty =  true;
+        }
+        else
+        {
+            maxRenderOrder = renderOrder;
+        }
+    }
+    
+    isRendering = false;
     
     for (auto it : _mbMap)
     {
@@ -121,30 +155,45 @@ void MiddlewareManager::update(float dt)
             buffer->uploadVB();
         }
     }
+    
+    _clearRemoveList();
+    
+    if (isOrderDirty)
+    {
+        std::sort(_updateList.begin(), _updateList.end(), [](IMiddleware* it1, IMiddleware* it2)
+        {
+            return it1->getRenderOrder() < it2->getRenderOrder();
+        });
+    }
 }
 
 void MiddlewareManager::addTimer(IMiddleware* editor)
 {
-    auto it = std::find(_removeList.begin(), _removeList.end(), editor);
-    if (it != _removeList.end())
-    {
-        _removeList.erase(it);
+    auto it0 = std::find(_updateList.begin(), _updateList.end(), editor);
+    if (it0 != _updateList.end()) {
+        return;
     }
-    _updateMap[editor] = true;
+    
+    auto it1 = std::find(_removeList.begin(), _removeList.end(), editor);
+    if (it1 != _removeList.end())
+    {
+        _removeList.erase(it1);
+    }
+    _updateList.push_back(editor);
 }
 
 void MiddlewareManager::removeTimer(IMiddleware* editor)
 {
-    if (isUpdating)
+    if (isUpdating || isRendering)
     {
         _removeList.push_back(editor);
     }
     else
     {
-        auto it = _updateMap.find(editor);
-        if (it != _updateMap.end())
+        auto it = std::find(_updateList.begin(), _updateList.end(), editor);
+        if (it != _updateList.end())
         {
-            _updateMap.erase(it);
+            _updateList.erase(it);
         }
     }
 }

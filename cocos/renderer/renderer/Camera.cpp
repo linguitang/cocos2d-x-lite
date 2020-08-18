@@ -24,21 +24,18 @@
 
 #include "Camera.h"
 #include "gfx/FrameBuffer.h"
-#include "INode.h"
+#include "math/MathUtil.h"
 
 RENDERER_BEGIN
 
 Camera::Camera()
 {
-    _cachedView.color = _color;
-    _cachedView.depth = _depth;
-    _cachedView.clearFlags = _clearFlags;
-    _cachedView.stencil = _stencil;
 }
 
 Camera::~Camera()
 {
     RENDERER_SAFE_RELEASE(_framebuffer);
+    RENDERER_SAFE_RELEASE(_node);
 }
 
 void Camera::setFrameBuffer(FrameBuffer* framebuffer)
@@ -46,8 +43,6 @@ void Camera::setFrameBuffer(FrameBuffer* framebuffer)
     RENDERER_SAFE_RELEASE(_framebuffer);
     _framebuffer = framebuffer;
     RENDERER_SAFE_RETAIN(_framebuffer);
-    
-    _cachedView.frameBuffer = _framebuffer;
 }
 
 void Camera::setWorldMatrix(const Mat4& worldMatrix)
@@ -63,25 +58,21 @@ void Camera::setWorldMatrix(const Mat4& worldMatrix)
 void Camera::setColor(float r, float g, float b, float a)
 {
     _color.set(r, g, b, a);
-    _cachedView.color = _color;
 }
 
 void Camera::setDepth(float depth)
 {
     _depth = depth;
-    _cachedView.depth = _depth;
 }
 
 void Camera::setStencil(int stencil)
 {
     _stencil = stencil;
-    _cachedView.stencil = _stencil;
 }
 
 void Camera::setClearFlags(uint8_t flags )
 {
     _clearFlags = flags;
-    _cachedView.clearFlags = _clearFlags;
 }
 
 void Camera::setRect(float x, float y, float w, float h)
@@ -92,76 +83,89 @@ void Camera::setRect(float x, float y, float w, float h)
 void Camera::setStages(const std::vector<std::string>& stages)
 {
     _stages = stages;
-    _cachedView.stages = _stages;
 }
 
 
-void Camera::setNode(INode* node)
+void Camera::setNode(NodeProxy* node)
 {
+    if (_node != nullptr)
+    {
+        _node->release();
+    }
     _node = node;
+    if (_node != nullptr)
+    {
+        _node->retain();
+    }
 }
 
-const View& Camera::extractView( int width, int height)
+void Camera::calcMatrices(const int width, const int height)
 {
-    // can optimize it if node's position is not changed
-    
-    // rect
-    _cachedView.rect.set(_rect.x * width,
-                 _rect.y * height,
-                 _rect.w * width,
-                 _rect.h * height);
-
     // view matrix
     //REFINE:
-    _worldRTInv.set(_node->getWorldRT());
-    _cachedView.matView.set(_worldRTInv.getInversed());
+    _node->getWorldRT(&_worldRTInv);
+    _matView.set(_worldRTInv);
+    _matView.inverse();
 
     // projecton matrix
     float aspect = (float)width / height;
     if (ProjectionType::PERSPECTIVE == _projection)
-        Mat4::createPerspective(_fov / 3.1415926 * 180, aspect, _near, _far, &_cachedView.matProj);
+        Mat4::createPerspective(_fov / 3.1415926 * 180, aspect, _near, _far, &_matProj);
     else
     {
         float x = _orthoHeight * aspect;
         float y = _orthoHeight;
-        Mat4::createOrthographic(-x, x, -y, y, &_cachedView.matProj);
+        Mat4::createOrthographicOffCenter(-x, x, -y, y, _near, _far, &_matProj);
     }
 
     // view projection
-    Mat4::multiply(_cachedView.matProj, _cachedView.matView, &_cachedView.matViewProj);
-    _cachedView.matInvViewPorj.set(_cachedView.matViewProj.getInversed());
-    
-    return _cachedView;
+    Mat4::multiply(_matProj, _matView, &_matViewProj);
+    _matInvViewProj.set(_matViewProj.getInversed());
 }
 
-Vec3& Camera::screenToWorld(Vec3& out, const Vec3& screenPos, int width, int height) const
+void Camera::extractView(View& out, int width, int height)
 {
-    float aspect = (float)width / height;
+    if (_framebuffer != nullptr) {
+        width = _framebuffer->getWidth();
+        height = _framebuffer->getHeight();
+    }
+    
+    // rect
+    out.rect.set(_rect.x * width,
+                 _rect.y * height,
+                 _rect.w * width,
+                 _rect.h * height);
+    
+    // clear opts
+    out.color.set(_color.r, _color.g, _color.b, _color.a);
+    out.depth = _depth;
+    out.stencil = _stencil;
+    out.clearFlags = _clearFlags;
+
+    calcMatrices(width, height);
+    out.matView.set(_matView);
+    out.matViewInv.set(_worldRTInv);
+    out.matProj.set(_matProj);
+    out.matViewProj.set(_matViewProj);
+    out.matInvViewProj.set(_matInvViewProj);
+    
+    // stages & framebuffer
+    out.stages = _stages;
+    out.frameBuffer = _framebuffer;
+    
+    // culling mask
+    out.cullingMask = _cullingMask;
+    out.cullingByID = true;
+}
+
+Vec3& Camera::screenToWorld(Vec3& out, const Vec3& screenPos, int width, int height)
+{
+    calcMatrices(width, height);
+    
     float cx = _rect.x * width;
     float cy = _rect.y * height;
     float cw = _rect.w * width;
     float ch = _rect.h * height;
-    
-    // projection matrix
-    Mat4 matProj;
-    if (ProjectionType::PERSPECTIVE == _projection)
-        Mat4::createPerspective(_fov / 3.1415926 * 180, aspect, _near, _far, &matProj);
-    else
-    {
-        float x = _orthoHeight * aspect;
-        float y = _orthoHeight;
-        Mat4::createOrthographic(-x, x, -y, y, &matProj);
-    }
-    
-    const_cast<Camera*>(this)->_worldRTInv = _node->getWorldRT();
-    const_cast<Camera*>(this)->_worldRTInv.inverse();
-    
-    // view projection
-    Mat4 matViewProj;
-    Mat4::multiply(matProj, _worldRTInv, &matViewProj);
-    
-    // invert view projection
-    Mat4 matInvViewProj = matViewProj.getInversed();
     
     if (ProjectionType::PERSPECTIVE == _projection)
     {
@@ -171,60 +175,57 @@ Vec3& Camera::screenToWorld(Vec3& out, const Vec3& screenPos, int width, int hei
                 1.0f);
         
         // Transform to world position.
-        matInvViewProj.transformPoint(&out);
-        const_cast<Camera*>(this)->_worldPos.set(_node->getWorldPos());
-        Vec3 tmpVec3 = _worldPos;
-        out = tmpVec3.lerp(out, screenPos.z / _far);
+        out.transformMat4(out, _matInvViewProj);
+        
+        _node->getWorldPosition(&_worldPos);
+        _temp_v3.set(_worldPos);
+        out = _temp_v3.lerp(out, MathUtil::lerp(_near / _far, 1, screenPos.z));
     }
     else
     {
-        float range = _far - _near;
         out.set((screenPos.x - cx) * 2.0f / cw - 1.0f,
                 (screenPos.y - cy) * 2.0f / ch - 1.0f,
-                (_far - screenPos.z) / range * 2.0f - 1.0f);
+                screenPos.z * 2.0f - 1.0f);
         
         // Transform to world position.
-        matInvViewProj.transformPoint(&out);
+        out.transformMat4(out, _matInvViewProj);
     }
     
     return out;
 }
 
-Vec3& Camera::worldToScreen(Vec3& out, const Vec3& worldPos, int width, int height) const
+Vec3& Camera::worldToScreen(Vec3& out, const Vec3& worldPos, int width, int height)
 {
-    float aspect = (float)width / height;
+    calcMatrices(width, height);
+    
     float cx = _rect.x * width;
     float cy = _rect.y * height;
     float cw = _rect.w * width;
     float ch = _rect.h * height;
     
-    // projection matrix
-    Mat4 matProj;
-    if (ProjectionType::PERSPECTIVE == _projection)
-        Mat4::createPerspective(_fov, aspect, _near, _far, &matProj);
-    else
-    {
-        float x = _orthoHeight * aspect;
-        float y = _orthoHeight;
-        Mat4::createOrthographic(-x, x, -y, y, &matProj);
-    }
+    out.transformMat4(worldPos, _matViewProj);
+    out.x = cx + (out.x + 1) * 0.5f * cw;
+    out.y = cy + (out.y + 1) * 0.5f * ch;
+    out.z = out.z * 0.5 + 0.5;
     
-    const_cast<Camera*>(this)->_worldRTInv = _node->getWorldRT();
-    const_cast<Camera*>(this)->_worldRTInv.inverse();
-    // view projection
-    Mat4 matViewProj;
-    Mat4::multiply(matProj, _worldRTInv, &matViewProj);
+    return out;
+}
+
+Mat4& Camera::worldMatrixToScreen(Mat4& out, const Mat4& worldMatrix, int width, int height)
+{
+    calcMatrices(width, height);
     
-    // caculate w
-    float w = worldPos.x * matViewProj.m[3] +
-              worldPos.y * matViewProj.m[7] +
-              worldPos.z * matViewProj.m[11] +
-              matViewProj.m[15];
+    Mat4::multiply(_matViewProj, worldMatrix, &out);
+
+    float halfWidth = width / 2;
+    float halfHeight = height / 2;
     
-    matViewProj.transformPoint(worldPos, &out);
-    out.x = cx + (out.x / w + 1) * 0.5f * cw;
-    out.y = cy + (out.y / w + 1) * 0.5f * ch;
-    
+    _temp_mat4.set(Mat4::IDENTITY);
+    _temp_mat4.translate(halfWidth, halfHeight, 0, &_temp_mat4);
+    _temp_mat4.scale(halfWidth, halfHeight, 1, &_temp_mat4);
+
+    Mat4::multiply(_temp_mat4, out, &out);
+
     return out;
 }
 

@@ -39,14 +39,17 @@ import android.os.Bundle;
 import android.os.Message;
 import android.preference.PreferenceManager.OnActivityResultListener;
 import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.cocos2dx.lib.Cocos2dxHelper.Cocos2dxHelperListener;
+
+import java.lang.reflect.Field;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -64,7 +67,7 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
     // ===========================================================
     private static Cocos2dxActivity sContext = null;
 
-    protected RelativeLayout mFrameLayout = null;
+    protected FrameLayout mFrameLayout = null;
     
     private Cocos2dxGLSurfaceView mGLSurfaceView = null;
     private int[] mGLContextAttrs = null;
@@ -255,17 +258,42 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
         ViewGroup.LayoutParams frameLayoutParams =
                 new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                                            ViewGroup.LayoutParams.MATCH_PARENT);
-        mFrameLayout = new RelativeLayout(this);
+        mFrameLayout = new FrameLayout(this);
         mFrameLayout.setLayoutParams(frameLayoutParams);
 
         Cocos2dxRenderer renderer = this.addSurfaceView();
         this.addDebugInfo(renderer);
+
 
         // Should create EditBox after adding SurfaceView, or EditBox will be hidden by SurfaceView.
         mEditBox = new Cocos2dxEditBox(this, mFrameLayout);
 
         // Set frame layout as the content view
         setContentView(mFrameLayout);
+
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        try {
+            Field field = lp.getClass().getField("layoutInDisplayCutoutMode");
+            //Field constValue = lp.getClass().getDeclaredField("LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER");
+            Field constValue = lp.getClass().getDeclaredField("LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES");
+            field.setInt(lp, constValue.getInt(null));
+            
+            // https://developer.android.com/training/system-ui/immersive
+            int flag = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+
+            flag |= View.class.getDeclaredField("SYSTEM_UI_FLAG_IMMERSIVE_STICKY").getInt(null);
+            View view = getWindow().getDecorView();
+            view.setSystemUiVisibility(flag);
+
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setKeepScreenOn(boolean value) {
@@ -310,8 +338,6 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
         Log.d(TAG, "Cocos2dxActivity onCreate: " + this + ", savedInstanceState: " + savedInstanceState);
         super.onCreate(savedInstanceState);
 
-        Utils.setActivity(this);
-
         // Workaround in https://stackoverflow.com/questions/16283079/re-launch-of-activity-on-home-button-but-only-the-first-time/16447508
         if (!isTaskRoot()) {
             // Android launched another instance of the root activity into an existing task
@@ -321,6 +347,8 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
             Log.w(TAG, "[Workaround] Ignore the activity started from icon!");
             return;
         }
+
+        Utils.setActivity(this);
 
         Utils.hideVirtualButton();
 
@@ -391,12 +419,17 @@ public abstract class Cocos2dxActivity extends Activity implements Cocos2dxHelpe
 
     @Override
     protected void onDestroy() {
+        super.onDestroy();
+
+        // Workaround in https://stackoverflow.com/questions/16283079/re-launch-of-activity-on-home-button-but-only-the-first-time/16447508
+        if (!isTaskRoot()) {
+            return;
+        }
+
         if(gainAudioFocus)
             Cocos2dxAudioFocusManager.unregisterAudioFocusListener(this);
         Cocos2dxHelper.unregisterBatteryLevelReceiver(this);;
         CanvasRenderingContext2DImpl.destroy();
-
-        super.onDestroy();
 
         Log.d(TAG, "Cocos2dxActivity onDestroy: " + this + ", mGLSurfaceView" + mGLSurfaceView);
         if (mGLSurfaceView != null) {

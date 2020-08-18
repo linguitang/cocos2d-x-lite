@@ -44,11 +44,11 @@ using namespace cocos2d;
 se::Object* __jsbObj = nullptr;
 se::Object* __glObj = nullptr;
 
-static ThreadPool* __threadPool = nullptr;
+static std::shared_ptr<ThreadPool> g_threadPool;
 
-static std::shared_ptr<cocos2d::network::Downloader> _localDownloader = nullptr;
-static std::map<std::string, std::function<void(const std::string&, unsigned char*, int )>> _localDownloaderHandlers;
-static uint64_t _localDownloaderTaskId = 1000000;
+static std::shared_ptr<cocos2d::network::Downloader> g_localDownloader = nullptr;
+static std::map<std::string, std::function<void(const std::string&, unsigned char*, int ,const std::string&)>> g_localDownloaderHandlers;
+static uint64_t g_localDownloaderTaskId = 1000000;
 static std::string xxteaKey = "";
 void jsb_set_xxtea_key(const std::string& key)
 {
@@ -57,10 +57,10 @@ void jsb_set_xxtea_key(const std::string& key)
 
 static cocos2d::network::Downloader *localDownloader()
 {
-    if(!_localDownloader)
+    if(!g_localDownloader)
     {
-        _localDownloader = std::make_shared<cocos2d::network::Downloader>();
-        _localDownloader->onDataTaskSuccess = [=](const cocos2d::network::DownloadTask& task,
+        g_localDownloader = std::make_shared<cocos2d::network::Downloader>();
+        g_localDownloader->onDataTaskSuccess = [=](const cocos2d::network::DownloadTask& task,
                                             std::vector<unsigned char>& data) {
             if(data.empty())
             {
@@ -68,8 +68,8 @@ static cocos2d::network::Downloader *localDownloader()
                 return;
             }
 
-            auto callback = _localDownloaderHandlers.find(task.identifier);
-            if(callback == _localDownloaderHandlers.end())
+            auto callback = g_localDownloaderHandlers.find(task.identifier);
+            if(callback == g_localDownloaderHandlers.end())
             {
                 SE_REPORT_ERROR("Getting image from (%s), callback not found!!", task.requestURL.c_str());
                 return;
@@ -78,29 +78,37 @@ static cocos2d::network::Downloader *localDownloader()
             unsigned char* imageData = (unsigned char*)malloc(imageBytes);
             memcpy(imageData, data.data(), imageBytes);
 
-            (callback->second)("", imageData, imageBytes);
+            (callback->second)("", imageData, imageBytes, "");
             //initImageFunc("", imageData, imageBytes);
-            _localDownloaderHandlers.erase(callback);
+            g_localDownloaderHandlers.erase(callback);
         };
-        _localDownloader->onTaskError = [=](const cocos2d::network::DownloadTask& task,
+        g_localDownloader->onTaskError = [=](const cocos2d::network::DownloadTask& task,
                                       int errorCode,
                                       int errorCodeInternal,
                                       const std::string& errorStr) {
 
             SE_REPORT_ERROR("Getting image from (%s) failed!", task.requestURL.c_str());
-            _localDownloaderHandlers.erase(task.identifier);
+            auto callback = g_localDownloaderHandlers.find(task.identifier);
+            if(callback == g_localDownloaderHandlers.end())
+            {
+                SE_REPORT_ERROR("Getting image from (%s), callback not found!!", task.requestURL.c_str());
+                return;
+            }
+
+            (callback->second)("", nullptr, 0, errorStr);
+            g_localDownloaderHandlers.erase(task.identifier);
         };
     }
-    return _localDownloader.get();
+    return g_localDownloader.get();
 }
 
-static void localDownloaderCreateTask(const std::string &url, std::function<void(const std::string&, unsigned char*, int )> callback)
+static void localDownloaderCreateTask(const std::string &url, std::function<void(const std::string&, unsigned char*, int, const std::string&)> callback)
 {
     std::stringstream ss;
-    ss << "jsb_loadimage_" << (_localDownloaderTaskId++);
+    ss << "jsb_loadimage_" << (g_localDownloaderTaskId++);
     std::string key = ss.str();
     auto task = localDownloader()->createDownloadDataTask(url, key);
-    _localDownloaderHandlers.emplace(std::make_pair(task->identifier, callback));
+    g_localDownloaderHandlers.emplace(std::make_pair(task->identifier, callback));
 }
 
 static const char* BYTE_CODE_FILE_EXT = ".jsc";
@@ -819,43 +827,57 @@ bool jsb_global_load_image(const std::string& path, const se::Value& callbackVal
         callbackVal.toObject()->call(seArgs, nullptr);
         return true;
     }
+    
+    std::shared_ptr<se::Value> callbackPtr = std::make_shared<se::Value>(callbackVal);
 
-    auto initImageFunc = [path, callbackVal](const std::string& fullPath, unsigned char* imageData, int imageBytes){
-        Image* img = new (std::nothrow) Image();
+    auto initImageFunc = [path, callbackPtr](const std::string& fullPath, unsigned char* imageData, int imageBytes, const std::string& errorMsg){
+        std::shared_ptr<uint8_t> imageDataGuard(imageData, free);
 
-        __threadPool->pushTask([=](int tid){
+        auto pool = g_threadPool;
+        if (!pool)
+            return;
+        pool->pushTask([=](int tid) mutable {
             // NOTE: FileUtils::getInstance()->fullPathForFilename isn't a threadsafe method,
             // Image::initWithImageFile will call fullPathForFilename internally which may
             // cause thread race issues. Therefore, we get the full path of file before
             // going into task callback.
             // Be careful of invoking any Cocos2d-x interface in a sub-thread.
             bool loadSucceed = false;
-            if (fullPath.empty())
+            std::shared_ptr<Image> img(new Image(), [](Image *image) {
+                image->release();
+            });
+
+            if (!errorMsg.empty()) {
+                loadSucceed = false;
+            }
+            else if (fullPath.empty())
             {
-                loadSucceed = img->initWithImageData(imageData, imageBytes);
-                free(imageData);
+                loadSucceed = img->initWithImageData(imageDataGuard.get(), imageBytes);
+                imageDataGuard = nullptr;
             }
             else
             {
                 loadSucceed = img->initWithImageFile(fullPath);
             }
 
-            struct ImageInfo* imgInfo = nullptr;
+            std::shared_ptr<ImageInfo> imgInfo;
             if(loadSucceed)
             {
-                imgInfo = createImageInfo(img);
+                imgInfo.reset(createImageInfo(img.get()));
             }
 
-            Application::getInstance()->getScheduler()->performFunctionInCocosThread([=](){
+            Application::getInstance()->getScheduler()->performFunctionInCocosThread([=]() mutable {
                 se::AutoHandleScope hs;
                 se::ValueArray seArgs;
                 se::Value dataVal;
+                
                 if (loadSucceed)
                 {
                     se::HandleObject retObj(se::Object::createPlainObject());
                     Data data;
-                    data.copy(imgInfo->data, imgInfo->length);
+                    data.fastSet(imgInfo->data, imgInfo->length); 
                     Data_to_seval(data, &dataVal);
+                    data.takeBuffer();
                     retObj->setProperty("data", dataVal);
                     retObj->setProperty("width", se::Value(imgInfo->width));
                     retObj->setProperty("height", se::Value(imgInfo->height));
@@ -884,15 +906,21 @@ bool jsb_global_load_image(const std::string& path, const se::Value& callbackVal
 
                     seArgs.push_back(se::Value(retObj));
 
-                    delete imgInfo;
+                    imgInfo = nullptr;
                 }
                 else
                 {
                     SE_REPORT_ERROR("initWithImageFile: %s failed!", path.c_str());
                 }
 
-                callbackVal.toObject()->call(seArgs, nullptr);
-                img->release();
+                if (!errorMsg.empty()) {
+                    se::HandleObject retObj(se::Object::createPlainObject());
+                    retObj->setProperty("errorMsg", se::Value(errorMsg));
+                    seArgs.push_back(se::Value(retObj));
+                }
+
+                callbackPtr->toObject()->call(seArgs, nullptr);
+                img = nullptr;
             });
 
         });
@@ -917,7 +945,7 @@ bool jsb_global_load_image(const std::string& path, const se::Value& callbackVal
             SE_REPORT_ERROR("Decode base64 image data failed!");
             return false;
         }
-        initImageFunc("", imageData, imageBytes);
+        initImageFunc("", imageData, imageBytes, "");
     }
     else
     {
@@ -930,7 +958,7 @@ bool jsb_global_load_image(const std::string& path, const se::Value& callbackVal
             SE_REPORT_ERROR("File (%s) doesn't exist!", path.c_str());
             return false;
         }
-        initImageFunc(fullPath, nullptr, 0);
+        initImageFunc(fullPath, nullptr, 0, "");
     }
     return true;
 }
@@ -1173,6 +1201,34 @@ static bool JSB_showInputBox(se::State& s)
 }
 SE_BIND_FUNC(JSB_showInputBox);
 
+static bool JSB_updateInputBoxRect(se::State& s)
+{
+    const auto& args = s.args();
+    size_t argc = args.size();
+    if (argc == 4)
+    {
+        SE_PRECONDITION2(args[0].isNumber(), false, "x is invalid!");
+        const auto& x = args[0].toInt32();
+        
+        SE_PRECONDITION2(args[1].isNumber(), false, "y is invalid!");
+        const auto& y = args[1].toInt32();
+        
+        SE_PRECONDITION2(args[2].isNumber(), false, "width is invalid!");
+        const auto& width = args[2].toInt32();
+        
+        
+        SE_PRECONDITION2(args[3].isNumber(), false, "height is invalid!");
+        const auto& height = args[3].toInt32();
+        
+        EditBox::updateRect(x, y, width, height);
+        return true;
+    }
+
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 4);
+    return false;
+}
+SE_BIND_FUNC(JSB_updateInputBoxRect);
+
 static bool JSB_hideInputBox(se::State& s)
 {
     EditBox::hide();
@@ -1182,7 +1238,7 @@ SE_BIND_FUNC(JSB_hideInputBox)
 
 bool jsb_register_global_variables(se::Object* global)
 {
-    __threadPool = ThreadPool::newFixedThreadPool(3);
+    g_threadPool.reset(ThreadPool::newFixedThreadPool(3));
 
     global->defineFunction("require", _SE(require));
     global->defineFunction("requireModule", _SE(moduleRequire));
@@ -1210,6 +1266,7 @@ bool jsb_register_global_variables(se::Object* global)
     __jsbObj->defineFunction("setPreferredFramesPerSecond", _SE(JSB_setPreferredFramesPerSecond));
     __jsbObj->defineFunction("showInputBox", _SE(JSB_showInputBox));
     __jsbObj->defineFunction("hideInputBox", _SE(JSB_hideInputBox));
+    __jsbObj->defineFunction("updateInputBoxRect", _SE(JSB_updateInputBoxRect));
 
     global->defineFunction("__getPlatform", _SE(JSBCore_platform));
     global->defineFunction("__getOS", _SE(JSBCore_os));
@@ -1229,8 +1286,7 @@ bool jsb_register_global_variables(se::Object* global)
     se::ScriptEngine::getInstance()->clearException();
 
     se::ScriptEngine::getInstance()->addBeforeCleanupHook([](){
-        delete __threadPool;
-        __threadPool = nullptr;
+        g_threadPool = nullptr;
 
         PoolManager::getInstance()->getCurrentPool()->clear();
     });

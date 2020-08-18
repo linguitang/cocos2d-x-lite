@@ -30,18 +30,47 @@
 #include "View.h"
 #include "Scene.h"
 #include "Effect.h"
+#include "Light.h"
 #include "InputAssembler.h"
 #include "Pass.h"
 #include "Camera.h"
-#include "INode.h"
 #include "Model.h"
+#include "math/MathUtil.h"
+#include "Program.h"
 
 RENDERER_BEGIN
 
+const size_t BaseRenderer::cc_lightDirection = std::hash<std::string>{}("cc_lightDirection");
+const size_t BaseRenderer::cc_lightColor = std::hash<std::string>{}("cc_lightColor");
+const size_t BaseRenderer::cc_lightPositionAndRange = std::hash<std::string>{}("cc_lightPositionAndRange");
+const size_t BaseRenderer::cc_shadow_map_lightViewProjMatrix = std::hash<std::string>{}("cc_shadow_map_lightViewProjMatrix");
+const size_t BaseRenderer::cc_shadow_map_info = std::hash<std::string>{}("cc_shadow_map_info");
+const size_t BaseRenderer::cc_shadow_map_bias = std::hash<std::string>{}("cc_shadow_map_bias");
+const size_t BaseRenderer::cc_shadow_lightViewProjMatrix = std::hash<std::string>{}("cc_shadow_lightViewProjMatrix");
+const size_t BaseRenderer::cc_shadow_info = std::hash<std::string>{}("cc_shadow_info");
+const size_t BaseRenderer::cc_matView = std::hash<std::string>{}("cc_matView");
+const size_t BaseRenderer::cc_matViewInv = std::hash<std::string>{}("cc_matViewInv");
+const size_t BaseRenderer::cc_matWorld = std::hash<std::string>{}("cc_matWorld");
+const size_t BaseRenderer::cc_matWorldIT = std::hash<std::string>{}("cc_matWorldIT");
+const size_t BaseRenderer::cc_matProj = std::hash<std::string>{}("cc_matProj");
+const size_t BaseRenderer::cc_matViewProj = std::hash<std::string>{}("cc_matViewProj");
+const size_t BaseRenderer::cc_cameraPos = std::hash<std::string>{}("cc_cameraPos");
+const size_t BaseRenderer::cc_time = std::hash<std::string>{}("cc_time");
+
+const size_t BaseRenderer::cc_shadow_map[4] = {
+    std::hash<std::string>{}("cc_shadow_map_0"),
+    std::hash<std::string>{}("cc_shadow_map_1"),
+    std::hash<std::string>{}("cc_shadow_map_2"),
+    std::hash<std::string>{}("cc_shadow_map_3"),
+};
+
 BaseRenderer::BaseRenderer()
 {
-    _drawItems.reserve(100);
-    _stageInfos.reserve(10);
+    _drawItems = new RecyclePool<DrawItem>([]()mutable->DrawItem*{return new DrawItem();},100);
+    _stageInfos = new RecyclePool<StageInfo>([]()mutable->StageInfo*{return new StageInfo();}, 10);
+    _views = new RecyclePool<View>([]()mutable->View*{return new View();}, 8);
+    
+    _tmpMat4 = new cocos2d::Mat4();
 }
 
 BaseRenderer::~BaseRenderer()
@@ -54,6 +83,18 @@ BaseRenderer::~BaseRenderer()
     
     RENDERER_SAFE_RELEASE(_defaultTexture);
     _defaultTexture = nullptr;
+    
+    delete _drawItems;
+    _drawItems = nullptr;
+    
+    delete _stageInfos;
+    _stageInfos = nullptr;
+    
+    delete _views;
+    _views = nullptr;
+    
+    delete _tmpMat4;
+    _tmpMat4 = nullptr;
 }
 
 bool BaseRenderer::init(DeviceGraphics* device, std::vector<ProgramLib::Template>& programTemplates)
@@ -99,233 +140,225 @@ void BaseRenderer::render(const View& view, const Scene* scene)
     _device->clear(view.clearFlags, &clearColor, view.depth, view.stencil);
     
     // get all draw items
-    _drawItems.clear();
-    int modelViewId = -1;
-    uint32_t drawItemCount = 0;
-    DrawItem drawItem;
+    _drawItems->reset();
     for (const auto& model : scene->getModels())
     {
-        modelViewId = model->getViewId();
-        if (view.cullingByID)
-        {
-            if (modelViewId != view.id)
-                continue;
-        }
-        else
-        {
-            if (-1 != modelViewId)
-                continue;
-        }
+        int modelMask = model->getCullingMask();
+        if ((modelMask & view.cullingMask) == 0)
+            continue;
         
-        drawItemCount = model->getDrawItemCount();
-        for (uint32_t i = 0; i < drawItemCount; ++i)
-        {
-            model->extractDrawItem(drawItem, i);
-            _drawItems.push_back(drawItem);
-        }
+        DrawItem* drawItem = _drawItems->add();
+        model->extractDrawItem(*drawItem);
     }
     
     // dispatch draw items to different stage
-    _stageInfos.clear();
+    _stageInfos->reset();
     StageItem stageItem;
-    StageInfo stageInfo;
-    std::vector<StageItem> stageItems;
     for (const auto& stage : view.stages)
     {
-        for (const auto& item : _drawItems)
+        StageInfo* stageInfo = _stageInfos->add();
+        stageInfo->stage = stage;
+        stageInfo->items.clear();
+        for (size_t i = 0, len = _drawItems->getLength(); i < len; i++)
         {
-            auto tech = item.effect->getTechnique(stage);
-            if (tech)
+            const DrawItem* item = _drawItems->getData(i);
+            
+            stageItem.passes.clear();
+            for (const Pass* p : item->effect->getPasses())
             {
-                stageItem.model = item.model;
-                stageItem.ia = item.ia;
-                stageItem.effect = item.effect;
-                stageItem.defines = item.defines;
-                stageItem.technique = tech;
-                stageItem.sortKey = -1;
-                
-                stageItems.push_back(stageItem);
+                if (p->getStage() == stage)
+                {
+                    stageItem.passes.push_back(p);
+                }
             }
+            if (stageItem.passes.size() == 0)
+            {
+                continue;
+            }
+            
+            stageItem.model = item->model;
+            stageItem.ia = item->ia;
+            stageItem.effect = item->effect;
+            stageItem.sortKey = -1;
+            
+            stageInfo->items.push_back(stageItem);
         }
-        
-        stageInfo.stage = stage;
-        stageInfo.items = &stageItems;
-        _stageInfos.push_back(std::move(stageInfo));
     }
     
     // render stages
-    std::unordered_map<std::string, StageCallback>::iterator foundIter;
-    for (const auto& stageInfo : _stageInfos)
+    std::unordered_map<std::string, const StageCallback>::iterator foundIter;
+    for (size_t i = 0, len = _stageInfos->getLength(); i < len; i++)
     {
-        foundIter = _stage2fn.find(stageInfo.stage);
+        StageInfo* stageInfo = _stageInfos->getData(i);
+        foundIter = _stage2fn.find(stageInfo->stage);
         if (_stage2fn.end() != foundIter)
         {
             auto& fn = foundIter->second;
-            fn(view, *stageInfo.items);
+            fn(view, stageInfo->items);
         }
     }
 }
 
-void BaseRenderer::draw(const StageItem& item)
+void BaseRenderer::setProperty (const Effect::Property* prop)
 {
-    Mat4 worldMatrix = item.model->getWorldMatrix();
-    _device->setUniformMat4("model", worldMatrix.m);
-
-    //REFINE: add Mat3
-    worldMatrix.inverse();
-    worldMatrix.transpose();
-    _device->setUniformMat4("normalMatrix", worldMatrix.m);
-    
-    // set technique uniforms
-    auto ia = item.ia;
-    Technique::Parameter::Type propType = Technique::Parameter::Type::UNKNOWN;
-    for (const auto& param : item.technique->getParameters())
+    Technique::Parameter::Type propType = prop->getType();
+    auto& propName = prop->getName();
+    auto propHashName = prop->getHashName();
+    if (Effect::Property::Type::UNKNOWN == propType)
     {
-        Effect::Property* prop = const_cast<Effect::Property*>(&item.effect->getProperty(param.getName()));
-        
-        if (Effect::Property::Type::UNKNOWN == prop->getType())
-            *prop = param;
-        
-        if (nullptr == prop->getValue())
+        RENDERER_LOGW("Failed to set technique property, type unknown");
+        return;
+    }
+  
+    if (nullptr == prop->getValue())
+    {
+        Effect::Property tmp(propName, propType);
+        prop = &tmp;
+        if (Effect::Property::Type::TEXTURE_2D == propType)
         {
-            *prop = Effect::Property(param.getName(), param.getType());
-            
-            if (Effect::Property::Type::TEXTURE_2D == param.getType())
-                prop->setTexture(_defaultTexture);
+            tmp.setTexture(_defaultTexture);
         }
-        
-        if (nullptr == prop->getValue())
+    }
+    
+    if (nullptr == prop->getValue())
+    {
+        RENDERER_LOGW("Failed to set technique property %s, value not found", propName.c_str());
+        return;
+    }
+    
+    if (Effect::Property::Type::TEXTURE_2D == propType ||
+        Effect::Property::Type::TEXTURE_CUBE == propType)
+    {
+        if (1 == prop->getCount())
         {
-            RENDERER_LOGW("Failed to set technique property %s, value not found", param.getName().c_str());
-            continue;
+            _device->setTexture(propHashName,
+                                (renderer::Texture *)(prop->getValue()),
+                                allocTextureUnit());
         }
-        
-        propType = prop->getType();
-        if (Effect::Property::Type::TEXTURE_2D == propType ||
-            Effect::Property::Type::TEXTURE_CUBE == propType)
+        else if (0 < prop->getCount())
         {
-            if (0 != param.getCount())
+            std::vector<int> slots;
+            slots.reserve(10);
+            for (int i = 0; i < prop->getCount(); ++i)
             {
-                if (param.getCount() != prop->getCount())
-                {
-                    RENDERER_LOGW("The length of texture array %d is not correct(expect %d)", prop->getCount(), param.getCount());
-                    continue;
-                }
-                
-                std::vector<int> slots;
-                slots.reserve(10);
-                for (int i = 0; i < param.getCount(); ++i)
-                    slots.push_back(allocTextureUnit());
-                
-                _device->setTextureArray(param.getName(),
-                                         std::move(prop->getTextureArray()),
-                                         slots);
+                slots.push_back(allocTextureUnit());
             }
-            else
-                _device->setTexture(param.getName(),
-                                    (renderer::Texture *)(prop->getValue()),
-                                    allocTextureUnit());
+            
+            _device->setTextureArray(propHashName,
+                                     prop->getTextureArray(),
+                                     slots);
+        }
+    }
+    else
+    {
+        uint16_t bytes = prop->getBytes();
+        if (Effect::Property::Type::INT == propType ||
+            Effect::Property::Type::INT2 == propType ||
+            Effect::Property::Type::INT4 == propType)
+        {
+            _device->setUniformiv(propHashName, bytes / sizeof(int), (const int*)prop->getValue(), prop->getCount());
         }
         else
         {
-            if (0 != prop->getCount())
-            {
-                if (Technique::Parameter::Type::COLOR3 == propType ||
-                    Technique::Parameter::Type::INT3 == propType ||
-                    Technique::Parameter::Type::FLOAT3 == propType ||
-                    Technique::Parameter::Type::MAT3 == propType)
-                {
-                    RENDERER_LOGW("Uinform array of color3/int3/float3/mat3 can not be supported!");
-                    continue;
-                }
-                
-                uint8_t size = Technique::Parameter::getElements(propType);
-                if (size * prop->getCount() > 64)
-                {
-                    RENDERER_LOGW("Uniform array is too long!");
-                    continue;
-                }
+            _device->setUniformfv(propHashName, bytes / sizeof(float), (const float*)prop->getValue(), prop->getCount());
+        }
+    }
+}
+
+
+std::vector<const OrderedValueMap*> BaseRenderer::__tmp_defines__;
+void BaseRenderer::draw(const StageItem& item)
+{
+    const Mat4& worldMatrix = item.model->getWorldMatrix();
+    _device->setUniformMat4(cc_matWorld, worldMatrix);
+    
+    _tmpMat4->set(worldMatrix);
+    _tmpMat4->inverse();
+    _tmpMat4->transpose();
+    _device->setUniformMat4(cc_matWorldIT, *_tmpMat4);
+    
+    auto ia = item.ia;
+    // for each pass
+    for (const auto& pass : item.passes)
+    {
+        // set vertex buffer
+        _device->setVertexBuffer(0, ia->getVertexBuffer());
+        
+        // set index buffer
+        if (ia->_indexBuffer)
+            _device->setIndexBuffer(ia->_indexBuffer);
+        
+        // set primitive type
+        _device->setPrimitiveType(ia->_primitiveType);
+        
+        // get program
+        __tmp_defines__.clear();
+        size_t definesHash = _definesHash;
+        pass->extractDefines(definesHash, __tmp_defines__);
+        __tmp_defines__.push_back(&_defines);
+        _program = _programLib->switchProgram(pass->getHashName(), definesHash, __tmp_defines__);
+        _device->setProgram(_program);
+        
+        for (auto& uniform : _program->getUniforms())
+        {
+            auto prop = pass->getProperty(uniform.hashName);
+            if (prop) {
+                setProperty(prop);
             }
-            
-            uint16_t bytes = prop->getBytes();
-            if (Effect::Property::Type::INT == propType ||
-                Effect::Property::Type::INT2 == propType ||
-                Effect::Property::Type::INT4 == propType)
-                _device->setUniformiv(param.getName(), bytes / sizeof(int), (const int*)prop->getValue());
-            else
-                _device->setUniformfv(param.getName(), bytes / sizeof(float), (const float*)prop->getValue());
         }
         
-        // for each pass
-        for (const auto& pass : item.technique->getPasses())
+        // cull mode
+        _device->setCullMode(pass->getCullMode());
+        
+        // blend
+        if (pass->isBlend())
         {
-            // set vertex buffer
-            _device->setVertexBuffer(0, ia->getVertexBuffer());
-            
-            // set index buffer
-            if (ia->_indexBuffer)
-                _device->setIndexBuffer(ia->_indexBuffer);
-            
-            // set primitive type
-            _device->setPrimitiveType(ia->_primitiveType);
-            
-            // set program
-            auto program = _programLib->getProgram(pass->_programName, *(item.defines));
-            _device->setProgram(program);
-            
-            // cull mode
-            _device->setCullMode(pass->_cullMode);
-            
-            // blend
-            if (pass->_blend)
-            {
-                _device->enableBlend();
-                _device->setBlendFuncSeparate(pass->_blendSrc,
-                                              pass->_blendDst,
-                                              pass->_blendSrcAlpha,
-                                              pass->_blendDstAlpha);
-                _device->setBlendEquationSeparate(pass->_blendEq, pass->_blendAlphaEq);
-                _device->setBlendColor(pass->_blendColor);
-            }
-            
-            // depth test & write
-            if (pass->_depthTest)
-            {
-                _device->enableDepthTest();
-                _device->setDepthFunc(pass->_depthFunc);
-            }
-            if (pass->_depthWrite)
-                _device->enableDepthWrite();
-            
-            // setencil
-            if (pass->_stencilTest)
-            {
-                _device->enableStencilTest();
-                
-                // front
-                _device->setStencilFuncFront(pass->_stencilFuncFront,
-                                             pass->_stencilRefFront,
-                                             pass->_stencilMaskFront);
-                _device->setStencilOpFront(pass->_stencilFailOpFront,
-                                           pass->_stencilZFailOpFront,
-                                           pass->_stencilZPassOpFront,
-                                           pass->_stencilWriteMaskFront);
-                
-                // back
-                _device->setStencilFuncBack(pass->_stencilFuncBack,
-                                            pass->_stencilRefBack,
-                                            pass->_stencilMaskBack);
-                _device->setStencilOpBack(pass->_stencilFailOpBack,
-                                          pass->_stencilZFailOpBack,
-                                          pass->_stencilZPassOpBack,
-                                          pass->_stencilWriteMaskBack);
-            }
-            
-            // draw pass
-            _device->draw(ia->_start, ia->getPrimitiveCount());
-            
-            resetTextureUint();
+            _device->enableBlend();
+            _device->setBlendFuncSeparate(pass->getBlendSrc(),
+                                          pass->getBlendDst(),
+                                          pass->getBlendSrcAlpha(),
+                                          pass->getBlendDstAlpha());
+            _device->setBlendEquationSeparate(pass->getBlendEq(), pass->getBlendAlphaEq());
+            _device->setBlendColor(pass->getBlendColor());
         }
+        
+        // depth test & write
+        if (pass->isDepthTest())
+        {
+            _device->enableDepthTest();
+            _device->setDepthFunc(pass->getDepthFunc());
+        }
+        if (pass->isDepthWrite())
+            _device->enableDepthWrite();
+        
+        // setencil
+        if (pass->isStencilTest())
+        {
+            _device->enableStencilTest();
+            
+            // front
+            _device->setStencilFuncFront(pass->getStencilFuncFront(),
+                                         pass->getStencilRefFront(),
+                                         pass->getStencilMaskFront());
+            _device->setStencilOpFront(pass->getStencilFailOpFront(),
+                                       pass->getStencilZFailOpFront(),
+                                       pass->getStencilZPassOpFront(),
+                                       pass->getStencilWriteMaskFront());
+            
+            // back
+            _device->setStencilFuncBack(pass->getStencilFuncBack(),
+                                        pass->getStencilRefBack(),
+                                        pass->getStencilMaskBack());
+            _device->setStencilOpBack(pass->getStencilFailOpBack(),
+                                      pass->getStencilZFailOpBack(),
+                                      pass->getStencilZPassOpBack(),
+                                      pass->getStencilWriteMaskBack());
+        }
+        
+        // draw pass
+        _device->draw(ia->_start, ia->getPrimitiveCount());
+        
+        resetTextureUint();
     }
 }
 
@@ -347,12 +380,13 @@ int BaseRenderer::allocTextureUnit()
 
 void BaseRenderer::reset()
 {
-    
+    _views->reset();
+    _stageInfos->reset();
 }
 
 View* BaseRenderer::requestView()
 {
-    return new (std::nothrow) View();
+    return _views->add();
 }
 
 RENDERER_END

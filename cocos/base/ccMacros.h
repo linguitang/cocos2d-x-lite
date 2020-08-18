@@ -76,6 +76,11 @@ typedef SSIZE_T ssize_t;
  */
 #define CC_RADIANS_TO_DEGREES(__ANGLE__) ((__ANGLE__) * 57.29577951f) // PI * 180
 
+ /** @def CC_SIGN
+  gets sign of value
+  */
+#define CC_SIGN(__VALUE__) ((__VALUE__) > 0 ? 1 : ((__VALUE__) < 0 ? -1 : 0))
+
 #ifndef FLT_EPSILON
 #define FLT_EPSILON     1.192092896e-07F
 #endif // FLT_EPSILON

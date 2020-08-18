@@ -31,6 +31,8 @@
 #include "Base.h"
 #include "../Value.hpp"
 
+#include <thread>
+
 #if SE_ENABLE_INSPECTOR
 namespace node {
     namespace inspector {
@@ -298,6 +300,7 @@ namespace se {
         static void onFatalErrorCallback(const char* location, const char* message);
         static void onOOMErrorCallback(const char* location, bool is_heap_oom);
         static void onMessageCallback(v8::Local<v8::Message> message, v8::Local<v8::Value> data);
+        static void onPromiseRejectCallback(v8::PromiseRejectMessage msg);
 
         std::chrono::steady_clock::time_point _startTime;
         std::vector<RegisterCallback> _registerCallbackArray;
@@ -312,6 +315,8 @@ namespace se {
         v8::Isolate* _isolate;
         v8::HandleScope* _handleScope;
         Object* _globalObj;
+        Value _gcFuncValue;
+        Object *_gcFunc = nullptr;
 
         FileOperationDelegate _fileOperationDelegate;
         ExceptionCallback _exceptionCallback;
@@ -320,6 +325,8 @@ namespace se {
         node::Environment* _env;
         node::IsolateData* _isolateData;
 #endif
+
+        std::thread::id _engineThreadId;
 
         std::string _debuggerServerAddr;
         uint32_t _debuggerServerPort;

@@ -2,17 +2,17 @@
  Copyright (c) 2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
-
+ 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
-
+ 
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
-
+ 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,10 +21,11 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-
 #include "ProgramLib.h"
 #include "../gfx/Program.h"
 #include "gfx/DeviceGraphics.h"
+
+#include "math/MathUtil.h"
 
 #include <regex>
 #include <string>
@@ -34,36 +35,67 @@
 namespace {
     uint32_t _shdID = 0;
 
-    std::string generateDefines(const cocos2d::ValueMap& defMap)
+    std::string generateDefines(const std::vector<const cocos2d::OrderedValueMap*>& definesList)
     {
         std::string ret;
-        for (const auto& def : defMap)
-        {
-            if (def.second.asBool())
-            {
-                ret += "#define "  + def.first + "\n";
-            }
-        }
-        return ret;
-    }
-
-    std::string replaceMacroNums(const std::string str, const cocos2d::ValueMap& defMap)
-    {
+        std::string v;
         cocos2d::ValueMap cache;
-        std::string tmp = str;
-        for (const auto& def : defMap)
+        for (int i = (int)definesList.size() - 1; i >= 0; i--)
         {
-            if (def.second.getType() == cocos2d::Value::Type::INTEGER || def.second.getType() == cocos2d::Value::Type::UNSIGNED)
+            const cocos2d::OrderedValueMap* defMap = definesList[i];
+            for (const auto& def : *defMap)
             {
+                if (cache.find(def.first) != cache.end())
+                {
+                    continue;
+                }
+                
+                if (def.second.getType() == cocos2d::Value::Type::BOOLEAN)
+                {
+                    v = def.second.asBool() ? "1" : "0";
+                }
+                else
+                {
+                    v = std::to_string(def.second.asUnsignedInt());
+                }
+                
+                ret += "#define "  + def.first + " " + v + "\n";
+                
                 cache.emplace(def.first, def.second);
             }
         }
+       
+        return ret;
+    }
 
+    std::string replaceMacroNums(const std::string str, const std::vector<const cocos2d::OrderedValueMap*>& definesList)
+    {
+        cocos2d::OrderedValueMap cache;
+        std::string tmp = str;
+        for (int i = (int)definesList.size() - 1; i >= 0; i--)
+        {
+            const cocos2d::OrderedValueMap* defMap = definesList[i];
+
+            for (const auto& def : *defMap)
+            {
+                if (cache.find(def.first) != cache.end())
+                {
+                    continue;
+                }
+                
+                if (def.second.getType() == cocos2d::Value::Type::INTEGER || def.second.getType() == cocos2d::Value::Type::UNSIGNED)
+                {
+                    cache.emplace(def.first, def.second);
+                }
+            }
+        }
+        
         for (const auto& def : cache)
         {
             std::regex pattern(def.first);
             tmp = std::regex_replace(tmp, pattern, def.second.asString());
         }
+        
         return tmp;
     }
 
@@ -140,13 +172,23 @@ ProgramLib::ProgramLib(DeviceGraphics* device, std::vector<Template>& templates)
 
 ProgramLib::~ProgramLib()
 {
+    for (auto it = _cache.begin(); it != _cache.end(); it++)
+    {
+        if (it->second)
+        {
+            it->second->release();
+        }
+    }
+    _cache.clear();
+
     RENDERER_SAFE_RELEASE(_device);
     _device = nullptr;
 }
 
 void ProgramLib::define(const std::string& name, const std::string& vert, const std::string& frag, ValueVector& defines)
 {
-    auto iter = _templates.find(name);
+    size_t hash = std::hash<std::string>{}(name);
+    auto iter = _templates.find(hash);
     if (iter != _templates.end())
     {
         RENDERER_LOGW("Failed to define shader %s: already exists.", name.c_str());
@@ -178,11 +220,20 @@ void ProgramLib::define(const std::string& name, const std::string& vert, const 
         oneDefMap["_offset"] = offset;
     }
 
-    std::string newVert = _precision + vert;
-    std::string newFrag = _precision + frag;
-
+    std::string newVert = vert;
+    std::string newFrag = frag;
+    
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC) || (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
+    static const std::regex precision("precision\\s+(lowp|mediump|highp).*?;");
+    static const std::regex accuracy("(lowp|mediump|highp)\\s");
+    newVert = std::regex_replace(newVert, precision, "");
+    newVert = std::regex_replace(newVert, accuracy, "");
+    newFrag = std::regex_replace(newFrag, precision, "");
+    newFrag = std::regex_replace(newFrag, accuracy, "");
+#endif
+    
     // store it
-    auto& templ = _templates[name];
+    auto& templ = _templates[hash];
     templ.id = id;
     templ.name = name;
     templ.vert = newVert;
@@ -190,57 +241,71 @@ void ProgramLib::define(const std::string& name, const std::string& vert, const 
     templ.defines = defines;
 }
 
-uint32_t ProgramLib::getKey(const std::string& name, const ValueMap& defines)
+Program* ProgramLib::switchProgram(const size_t programNameHash, const size_t definesKeyHash, const std::vector<const OrderedValueMap*>& definesList)
 {
-    auto iter = _templates.find(name);
-    assert(iter != _templates.end());
-
-    auto& tmpl = iter->second;
-    int32_t key = 0;
-    for (auto& tmplDefs : tmpl.defines) {
-        auto& tmplDefMap = tmplDefs.asValueMap();
-        std::string tempName = tmplDefMap["name"].asString();
-        auto iter2 = defines.find(tempName);
-        if (iter2 == defines.end()) {
-            continue;
-        }
-//        const auto& value = iter2->second;
-//        key |= tmplDefs._map(100); //IDEA:
-        uint32_t offset = tmplDefMap["_offset"].asUnsignedInt();
-        key |= 1 << offset;
+    size_t programHash = 0;
+    MathUtil::combineHash(programHash, programNameHash);
+    MathUtil::combineHash(programHash, definesKeyHash);
+    
+    if (_current && _current->getHash() == programHash) {
+        return _current;
     }
-
-    return key << 8 | tmpl.id;
-}
-
-Program* ProgramLib::getProgram(const std::string& name, const ValueMap& defines)
-{
-    uint32_t key = getKey(name, defines);
-    auto iter = _cache.find(key);
+    
+    auto iter = _cache.find(programHash);
     if (iter != _cache.end()) {
-        iter->second->retain();
         return iter->second;
     }
 
     Program* program = nullptr;
     // get template
-    auto templIter = _templates.find(name);
+    auto templIter = _templates.find(programNameHash);
     if (templIter != _templates.end())
     {
         const auto& tmpl = templIter->second;
-        std::string customDef = generateDefines(defines) + "\n";
-        std::string vert = replaceMacroNums(tmpl.vert, defines);
+        std::string customDef = generateDefines(definesList) + "\n";
+        std::string vert = replaceMacroNums(tmpl.vert, definesList);
         vert = customDef + unrollLoops(vert);
-        std::string frag = replaceMacroNums(tmpl.frag, defines);
+        std::string frag = replaceMacroNums(tmpl.frag, definesList);
         frag = customDef + unrollLoops(frag);
-
+        
         program = new Program();
         program->init(_device, vert.c_str(), frag.c_str());
         program->link();
-        _cache.emplace(key, program);
+        _cache.emplace(programHash, program);
+        
+        program->setHash(programHash);
     }
+    
+    _current = program;
 
     return program;
+}
+
+const Value* ProgramLib::getValueFromDefineList(const std::string& name, const std::vector<const ValueMap*>& definesList)
+{
+    for (int i = (int)definesList.size() - 1; i >= 0; i--)
+    {
+        const ValueMap* defines = definesList[i];
+        auto iter = defines->find(name);
+        if (iter != defines->end())
+        {
+            return &iter->second;
+        }
+    }
+    
+    return nullptr;
+}
+
+uint32_t ProgramLib::getValueKey(const Value *v)
+{
+    if (v->getType() == Value::Type::BOOLEAN)
+    {
+        return v->asBool() ? 1 : 0;
+    }
+    else
+    {
+        return v->asUnsignedInt();
+    }
 }
 
 RENDERER_END

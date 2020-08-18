@@ -47,7 +47,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
     PlayerbackStateCompleted
 };
 
-@property (strong, nonatomic) AVPlayerViewController * playerController;
+@property (assign, nonatomic) AVPlayerViewController * playerController;
 
 - (void) setFrame:(int) left :(int) top :(int) width :(int) height;
 - (void) setURL:(int) videoSource :(std::string&) videoUrl;
@@ -108,6 +108,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) dealloc
 {
+    _videoPlayer = nullptr;
     [self cleanup];
     [super dealloc];
 }
@@ -137,7 +138,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(BOOL) isPlaying
 {
-    return (_state == PlayerbackState::PlayerbackStatePlaying);
+    return (self.playerController.player && self.playerController.player.rate != 0);
 }
 
 -(void) setURL:(int)videoSource :(std::string &)videoUrl
@@ -156,7 +157,8 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 -(void) seekTo:(float)sec
 {
     if (self.playerController.player)
-        [self.playerController.player seekToTime:CMTimeMake(sec, 1)];
+        [self.playerController.player seekToTime:CMTimeMake(sec * 600, 600) toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+
 }
 
 -(float) currentTime
@@ -193,7 +195,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) play
 {
-    if (self.playerController.player && _state != PlayerbackStatePlaying) {
+    if (self.playerController.player && ![self isPlaying] ) {
         [self.playerController.player play];
         _state = PlayerbackStatePlaying;
         _videoPlayer->onPlayEvent((int)VideoPlayer::EventType::PLAYING);
@@ -202,7 +204,7 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) pause
 {
-    if (self.playerController.player && _state == PlayerbackStatePlaying) {
+    if ( [self isPlaying] ) {
         [self.playerController.player pause];
         _state = PlayerbackStatePaused;
         _videoPlayer->onPlayEvent((int)VideoPlayer::EventType::PAUSED);
@@ -217,12 +219,16 @@ typedef NS_ENUM(NSInteger, PlayerbackState) {
 
 -(void) stop
 {
-    // AVPlayer doesn't have stop, so just pause it, and seek time to 0.
-    if (self.playerController.player && _state != PlayerbackStopped && _state != PlayerbackStateUnknown) {
+    // AVPlayer doesn't have `stop` method, so just pause it, and seek time to 0.
+    if (self.playerController.player && _state != PlayerbackStopped) {
         [self seekTo:0];
         [self.playerController.player pause];
         _state = PlayerbackStopped;
-        _videoPlayer->onPlayEvent((int)VideoPlayer::EventType::STOPPED);
+
+        // stop() will be invoked in dealloc, which is invoked by _videoPlayer's destructor,
+        // so do't send the message when _videoPlayer is being deleted.
+        if (_videoPlayer)
+            _videoPlayer->onPlayEvent((int)VideoPlayer::EventType::STOPPED);
     }
 }
 

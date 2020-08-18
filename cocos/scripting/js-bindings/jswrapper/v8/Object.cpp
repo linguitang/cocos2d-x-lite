@@ -30,10 +30,14 @@
 #include "ScriptEngine.hpp"
 #include "../MappingUtils.hpp"
 
+#include <memory>
+#include <unordered_map>
+
 namespace se {
 
-    std::unordered_map<Object*, void*> __objectMap; // Currently, the value `void*` is always nullptr
-    
+
+    std::unique_ptr<std::unordered_map<Object*, void*>> __objectMap; // Currently, the value `void*` is always nullptr
+
     namespace {
         v8::Isolate* __isolate = nullptr;
     }
@@ -53,11 +57,9 @@ namespace se {
         {
             _obj.unref();
         }
-
-        auto iter = __objectMap.find(this);
-        if (iter != __objectMap.end())
-        {
-            __objectMap.erase(iter);
+        
+        if(__objectMap){
+            __objectMap->erase(this);
         }
     }
 
@@ -94,6 +96,11 @@ namespace se {
     void Object::setIsolate(v8::Isolate* isolate)
     {
         __isolate = isolate;
+    }
+
+    void Object::setup()
+    {
+        __objectMap.reset(new std::unordered_map<Object*, void*>());
     }
 
     /* static */
@@ -135,26 +142,28 @@ namespace se {
         NativePtrToObjectMap::clear();
         NonRefNativePtrCreatedByCtorMap::clear();
 
-        std::vector<Object*> toReleaseObjects;
-        for (const auto& e : __objectMap)
-        {
-            obj = e.first;
-            cls = obj->_getClass();
-            obj->_obj.persistent().Reset();
-            obj->_rootCount = 0;
-
-            if (cls != nullptr && cls->_name == "__PrivateData")
+        if(__objectMap){
+            std::vector<Object*> toReleaseObjects;
+            for (const auto& e : *__objectMap)
             {
-                toReleaseObjects.push_back(obj);
+                obj = e.first;
+                cls = obj->_getClass();
+                obj->_obj.persistent().Reset();
+                obj->_rootCount = 0;
+
+                if (cls != nullptr && cls->_name == "__PrivateData")
+                {
+                    toReleaseObjects.push_back(obj);
+                }
+            }
+            for (auto e : toReleaseObjects)
+            {
+                e->decRef();
             }
         }
 
-        for (auto e : toReleaseObjects)
-        {
-            e->decRef();
-        }
 
-        __objectMap.clear();
+        __objectMap.reset();
         __isolate = nullptr;
     }
 
@@ -301,8 +310,10 @@ namespace se {
         _obj.init(obj);
         _obj.setFinalizeCallback(nativeObjectFinalizeHook);
 
-        assert(__objectMap.find(this) == __objectMap.end());
-        __objectMap.emplace(this, nullptr);
+        if(__objectMap){
+            assert(__objectMap->find(this) == __objectMap->end());
+            __objectMap->emplace(this, nullptr);
+        }
 
         return true;
     }
@@ -310,6 +321,7 @@ namespace se {
     bool Object::getProperty(const char *name, Value *data)
     {
         assert(data != nullptr);
+        data->setUndefined();
 
         v8::HandleScope handle_scope(__isolate);
 
@@ -328,6 +340,7 @@ namespace se {
         if (maybeExist.IsNothing())
             return false;
 
+
         if (!maybeExist.FromJust())
             return false;
 
@@ -339,6 +352,33 @@ namespace se {
 
         return true;
     }
+
+    bool Object::deleteProperty(const char *name)
+    {
+
+        v8::HandleScope handle_scope(__isolate);
+
+        if (_obj.persistent().IsEmpty())
+        {
+            return false;
+        }
+
+        v8::MaybeLocal<v8::String> nameValue = v8::String::NewFromUtf8(__isolate, name, v8::NewStringType::kNormal);
+        if (nameValue.IsEmpty())
+            return false;
+
+        v8::Local<v8::String> nameValToLocal = nameValue.ToLocalChecked();
+        v8::Local<v8::Context> context = __isolate->GetCurrentContext();
+        v8::Maybe<bool> maybeExist = _obj.handle(__isolate)->Delete(context, nameValToLocal);
+        if (maybeExist.IsNothing())
+            return false;
+
+        if (!maybeExist.FromJust())
+            return false;
+
+        return true;
+    }
+
 
     bool Object::setProperty(const char *name, const Value& data)
     {

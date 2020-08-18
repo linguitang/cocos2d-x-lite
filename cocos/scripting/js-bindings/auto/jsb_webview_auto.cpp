@@ -347,6 +347,25 @@ static bool js_webview_WebView_setOnJSCallback(se::State& s)
 }
 SE_BIND_FUNC(js_webview_WebView_setOnJSCallback)
 
+static bool js_webview_WebView_setBackgroundTransparent(se::State& s)
+{
+    cocos2d::WebView* cobj = (cocos2d::WebView*)s.nativeThisObject();
+    SE_PRECONDITION2(cobj, false, "js_webview_WebView_setBackgroundTransparent : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 1) {
+        bool arg0;
+        ok &= seval_to_boolean(args[0], &arg0);
+        SE_PRECONDITION2(ok, false, "js_webview_WebView_setBackgroundTransparent : Error processing arguments");
+        cobj->setBackgroundTransparent(arg0);
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
+    return false;
+}
+SE_BIND_FUNC(js_webview_WebView_setBackgroundTransparent)
+
 static bool js_webview_WebView_getOnJSCallback(se::State& s)
 {
     cocos2d::WebView* cobj = (cocos2d::WebView*)s.nativeThisObject();
@@ -619,12 +638,24 @@ SE_BIND_CTOR(js_webview_WebView_constructor, __jsb_cocos2d_WebView_class, js_coc
 
 static bool js_cocos2d_WebView_finalize(se::State& s)
 {
-    CCLOGINFO("jsbindings: finalizing JS object %p (cocos2d::WebView)", s.nativeThisObject());
-    cocos2d::WebView* cobj = (cocos2d::WebView*)s.nativeThisObject();
-    cobj->release();
+    // destructor is skipped
     return true;
 }
 SE_BIND_FINALIZE_FUNC(js_cocos2d_WebView_finalize)
+
+static bool js_cocos2d_WebView_destroy(se::State& s)
+{
+    CCLOGINFO("jsbindings: destory JS object %p (cocos2d::WebView)", s.nativeThisObject());
+    cocos2d::WebView* cobj = (cocos2d::WebView*)s.nativeThisObject();
+    cobj->release();
+    auto objIter = se::NativePtrToObjectMap::find(s.nativeThisObject());
+    if(objIter != se::NativePtrToObjectMap::end())
+    {
+        objIter->second->clearPrivateData(true);
+    }
+    return true;
+}
+SE_BIND_FUNC(js_cocos2d_WebView_destroy)
 
 bool js_register_webview_WebView(se::Object* obj)
 {
@@ -643,6 +674,7 @@ bool js_register_webview_WebView(se::Object* obj)
     cls->defineFunction("setBounces", _SE(js_webview_WebView_setBounces));
     cls->defineFunction("evaluateJS", _SE(js_webview_WebView_evaluateJS));
     cls->defineFunction("setOnJSCallback", _SE(js_webview_WebView_setOnJSCallback));
+    cls->defineFunction("setBackgroundTransparent", _SE(js_webview_WebView_setBackgroundTransparent));
     cls->defineFunction("getOnJSCallback", _SE(js_webview_WebView_getOnJSCallback));
     cls->defineFunction("canGoForward", _SE(js_webview_WebView_canGoForward));
     cls->defineFunction("getOnShouldStartLoading", _SE(js_webview_WebView_getOnShouldStartLoading));
@@ -654,6 +686,7 @@ bool js_register_webview_WebView(se::Object* obj)
     cls->defineFunction("setJavascriptInterfaceScheme", _SE(js_webview_WebView_setJavascriptInterfaceScheme));
     cls->defineFunction("setOnDidFinishLoading", _SE(js_webview_WebView_setOnDidFinishLoading));
     cls->defineFunction("getOnDidFinishLoading", _SE(js_webview_WebView_getOnDidFinishLoading));
+    cls->defineFunction("destroy", _SE(js_cocos2d_WebView_destroy));
     cls->defineStaticFunction("create", _SE(js_webview_WebView_create));
     cls->defineFinalizeFunction(_SE(js_cocos2d_WebView_finalize));
     cls->install();

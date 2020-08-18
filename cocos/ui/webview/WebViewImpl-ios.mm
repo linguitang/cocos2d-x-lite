@@ -26,7 +26,7 @@
 #include "platform/CCPlatformConfig.h"
 
 // Webview not available on tvOS
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS) && !defined(CC_TARGET_OS_TVOS)
+#if (USE_WEB_VIEW > 0) && (CC_TARGET_PLATFORM == CC_PLATFORM_IOS) && !defined(CC_TARGET_OS_TVOS)
 
 #import <WebKit/WKWebView.h>
 #import <WebKit/WKUIDelegate.h>
@@ -75,11 +75,13 @@
 - (void)goForward;
 
 - (void)setScalesPageToFit:(const bool)scalesPageToFit;
+
+- (void)setBackgroundTransparent:(const bool)isTransparent;
 @end
 
 
 @interface UIWebViewWrapper () <WKUIDelegate, WKNavigationDelegate>
-@property(nonatomic, retain) WKWebView *uiWebView;
+@property(nonatomic, assign) WKWebView *uiWebView;
 @property(nonatomic, copy) NSString *jsScheme;
 @end
 
@@ -105,14 +107,14 @@
 - (void)dealloc {
     self.uiWebView.UIDelegate = nil;
     [self.uiWebView removeFromSuperview];
-    self.uiWebView = nil;
+    [self.uiWebView release];
     self.jsScheme = nil;
     [super dealloc];
 }
 
 - (void)setupWebView {
     if (!self.uiWebView) {
-        self.uiWebView = [[[WKWebView alloc] init] autorelease];
+        self.uiWebView = [[WKWebView alloc] init];
         self.uiWebView.UIDelegate = self;
         self.uiWebView.navigationDelegate = self;
     }
@@ -210,16 +212,23 @@
     // but it doesn't support setting it dynamically. If we want to set this feature dynamically, then it will be too complex.
 }
 
+- (void)setBackgroundTransparent:(const bool)isTransparent {
+    if (!self.uiWebView) {[self setupWebView];}
+    [self.uiWebView setOpaque:isTransparent ? NO : YES];
+    [self.uiWebView setBackgroundColor:isTransparent ? [UIColor clearColor] : [UIColor whiteColor]];
+}
+
 #pragma mark - WKNavigationDelegate
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    NSString *url = [webView.URL absoluteString];
-    if ([[webView.URL scheme] isEqualToString:self.jsScheme]) {
-        self.onJsCallback([url UTF8String]);
+    NSString *url = [[navigationAction request].URL.absoluteString stringByRemovingPercentEncoding];
+    NSString* scheme = [navigationAction request].URL.scheme;
+    if ([scheme isEqualToString:self.jsScheme]) {
+        self.onJsCallback(url.UTF8String);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
     if (self.shouldStartLoading && url) {
-        if (self.shouldStartLoading([url UTF8String]) )
+        if (self.shouldStartLoading(url.UTF8String) )
             decisionHandler(WKNavigationActionPolicyAllow);
         else
             decisionHandler(WKNavigationActionPolicyCancel);
@@ -377,6 +386,10 @@ namespace cocos2d {
                                    width:width/scaleFactor
                                   height:height/scaleFactor];
     }
+
+    void WebViewImpl::setBackgroundTransparent(bool isTransparent){
+        [_uiWebViewWrapper setBackgroundTransparent:isTransparent];
+    }
 } //namespace cocos2d
 
-#endif // CC_TARGET_PLATFORM == CC_PLATFORM_IOS
+#endif // (USE_WEB_VIEW > 0) && (CC_TARGET_PLATFORM == CC_PLATFORM_IOS) && !defined(CC_TARGET_OS_TVOS)

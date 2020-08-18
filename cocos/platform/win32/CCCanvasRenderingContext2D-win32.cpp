@@ -28,8 +28,8 @@ namespace {
         assert(x + width <= totalWidth);
         assert(y + height <= totalHeight);
 
-        uint32_t y0 = totalHeight - (y + height);
-        uint32_t y1 = totalHeight - y;
+        uint32_t y0 = y;
+        uint32_t y1 = y + height;
         uint8_t* p;
         for (uint32_t offsetY = y0; offsetY < y1; ++offsetY)
         {
@@ -315,6 +315,11 @@ public:
         _lineWidth = lineWidth;
     }
 
+    void setPremultiply(bool multiply)
+    {
+        _premultiply = multiply;
+    }
+
     const Data& getDataRef() const
     {
         return _imageData;
@@ -334,6 +339,7 @@ private:
     float _lineWidth = 0.0f;
     float _bufferWidth = 0.0f;
     float _bufferHeight = 0.0f;
+    bool _premultiply = true;
 
     std::string _fontName;
     int _fontSize;
@@ -402,7 +408,7 @@ private:
         {
             CC_BREAK_IF(text.empty());
 
-            DWORD dwFmt = DT_SINGLELINE;
+            DWORD dwFmt = DT_SINGLELINE | DT_NOPREFIX;
 
             int bufferLen = 0;
             pwszBuffer = _utf8ToUtf16(text, &bufferLen);
@@ -444,7 +450,7 @@ private:
             CC_BREAK_IF(!pszText || nLen <= 0);
 
             RECT rc = { 0, 0, 0, 0 };
-            DWORD dwCalcFmt = DT_CALCRECT;
+            DWORD dwCalcFmt = DT_CALCRECT | DT_NOPREFIX;
 
             // measure text size
             DrawTextW(_DC, pszText, nLen, &rc, dwCalcFmt);
@@ -501,32 +507,68 @@ private:
             GetDIBits(_DC, _bmp, 0, _bufferHeight, dataBuf,
                       (LPBITMAPINFO)&bi, DIB_RGB_COLORS);
 
+
             uint8_t r = _fillStyle.r * 255;
             uint8_t g = _fillStyle.g * 255;
             uint8_t b = _fillStyle.b * 255;
+            uint8_t a = _fillStyle.a;
             COLORREF textColor = (b << 16 | g << 8 | r) & 0x00ffffff;
             COLORREF * pPixel = nullptr;
             COLORREF * pImage = nullptr;
-            for (int y = 0; y < _bufferHeight; ++y)
-            {
-                pPixel = (COLORREF *)dataBuf + y * (int)_bufferWidth;
-                pImage = (COLORREF *)imageBuf + y * (int)_bufferWidth;
-                for (int x = 0; x < _bufferWidth; ++x)
-                {
-                    COLORREF& clr = *pPixel;
-                    COLORREF& val = *pImage;
-                    // Because text is drawn in white color, and background color is black,
-                    // so the red value is equal to alpha value. And we should keep this value
-                    // as it includes anti-atlas information.
-                    uint8_t alpha = GetRValue(clr);
-                   
-                    val = (alpha << 24) | textColor;
 
-                    ++pPixel;
-                    ++pImage;
+            if (_premultiply)
+            {
+                uint8_t dirtyValue = 0;
+                for (int y = 0; y < _bufferHeight; ++y)
+                {
+                    pPixel = (COLORREF *)dataBuf + y * (int)_bufferWidth;
+                    pImage = (COLORREF *)imageBuf + y * (int)_bufferWidth;
+                    for (int x = 0; x < _bufferWidth; ++x)
+                    {
+                        COLORREF& clr = *pPixel;
+                        COLORREF& val = *pImage;
+                        dirtyValue = GetRValue(clr);
+                        // "dirtyValue > 0" means pixel was covered when drawing text
+                        if (dirtyValue > 0)
+                        {
+                            // r = _fillStyle.r * 255 * (dirtyValue / 255) * alpha;
+                            r = _fillStyle.r * dirtyValue * a;
+                            g = _fillStyle.g * dirtyValue * a;
+                            b = _fillStyle.b * dirtyValue * a;
+                            textColor = (b << 16 | g << 8 | r) & 0x00ffffff;
+                            val = ((BYTE)(dirtyValue * a) << 24) | textColor;
+                        }
+                        ++pPixel;
+                        ++pImage;
+                    }
                 }
             }
+            else
+            {
+                for (int y = 0; y < _bufferHeight; ++y)
+                {
+                    pPixel = (COLORREF *)dataBuf + y * (int)_bufferWidth;
+                    pImage = (COLORREF *)imageBuf + y * (int)_bufferWidth;
+                    for (int x = 0; x < _bufferWidth; ++x)
+                    {
+                        COLORREF& clr = *pPixel;
+                        COLORREF& val = *pImage;
+                        // Because text is drawn in white color, and background color is black,
+                        // so the red value is equal to alpha value. And we should keep this value
+                        // as it includes anti-atlas information.
+                        uint8_t alpha = GetRValue(clr);
 
+                        if (alpha > 0)
+                        {
+                            val = (alpha << 24) | textColor;
+                        }
+                        
+                        ++pPixel;
+                        ++pImage;
+                    }
+                }
+            }
+            
             free(dataBuf);
         } while (0);
     }
@@ -706,6 +748,10 @@ void CanvasRenderingContext2D::restore()
 void CanvasRenderingContext2D::setCanvasBufferUpdatedCallback(const CanvasBufferUpdatedCallback& cb)
 {
     _canvasBufferUpdatedCB = cb;
+}
+void CanvasRenderingContext2D::setPremultiply(bool multiply)
+{
+    _impl->setPremultiply(_premultiply);
 }
 
 void CanvasRenderingContext2D::set__width(float width)

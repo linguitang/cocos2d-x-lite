@@ -304,6 +304,20 @@ public:
     float toAxisAngle(Vec3* e) const;
 
     /**
+     * Converts this Quaternion4f to euler angle.
+     *
+     * @param e The Vec3f which stores the euler angle.
+     */
+    void toEuler(Vec3* e) const;
+
+    /**
+     * Converts this Quaternion4f to euler angle.
+     *
+     * @param e The Vec3f which stores the euler angle.
+     */
+    static void toEuler(const Quaternion& q, Vec3* e, bool outerZ = false);
+
+    /**
      * Interpolates between two quaternions using linear interpolation.
      *
      * The interpolation curve for linear interpolation between

@@ -25,12 +25,13 @@ THE SOFTWARE.
  ****************************************************************************/
 package org.cocos2dx.lib;
 
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.SparseArray;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -41,12 +42,12 @@ public class Cocos2dxWebViewHelper {
     private static final String TAG = Cocos2dxWebViewHelper.class.getSimpleName();
     private static Handler sHandler;
     private static Cocos2dxActivity sCocos2dxActivity;
-    private static RelativeLayout sLayout;
+    private static FrameLayout sLayout;
 
     private static SparseArray<Cocos2dxWebView> webViews;
     private static int viewTag = 0;
 
-    public Cocos2dxWebViewHelper(RelativeLayout layout) {
+    public Cocos2dxWebViewHelper(FrameLayout layout) {
         Cocos2dxWebViewHelper.sLayout = layout;
         Cocos2dxWebViewHelper.sHandler = new Handler(Looper.myLooper());
 
@@ -129,6 +130,19 @@ public class Cocos2dxWebViewHelper {
                 Cocos2dxWebView webView = webViews.get(index);
                 if (webView != null) {
                     webView.setWebViewRect(left, top, maxWidth, maxHeight);
+                }
+            }
+        });
+    }
+
+    public static void setBackgroundTransparent(final int index, final boolean isTransparent) {
+        sCocos2dxActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Cocos2dxWebView webView = webViews.get(index);
+                if (webView != null) {
+                    webView.setBackgroundColor(isTransparent ? Color.TRANSPARENT : Color.WHITE);
+                    webView.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
                 }
             }
         });

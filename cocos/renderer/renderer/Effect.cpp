@@ -30,17 +30,10 @@ RENDERER_BEGIN
 Effect::Effect()
 {}
 
-void Effect::init(const Vector<Technique*>& techniques,
-               const std::unordered_map<std::string, Property>& properties,
-               const std::vector<ValueMap>& defineTemplates)
+void Effect::init(const Vector<Technique*>& techniques)
 {
     _techniques = techniques;
-    _properties = properties;
-    _defineTemplates = defineTemplates;
-    
-    for (const auto defineTemplate: _defineTemplates)
-        _cachedNameValues.emplace(defineTemplate.at("name").asString(),
-                                  defineTemplate.at("value"));
+    switchTechnique(0);
 }
 
 Effect::~Effect()
@@ -52,69 +45,30 @@ Effect::~Effect()
 void Effect::clear()
 {
     _techniques.clear();
-    _defineTemplates.clear();
 }
 
-Technique* Effect::getTechnique(const std::string& stage) const
+void Effect::copy(const Effect* effect)
 {
-    int stageID = Config::getStageID(stage);
-    if (-1 == stageID)
-        return nullptr;
-    
-    for (const auto& tech : _techniques)
+    auto& otherTech = effect->_techniques;
+    for (auto it = otherTech.begin(); it != otherTech.end(); it ++)
     {
-        if (tech->getStageIDs() & stageID)
-            return tech;
+        auto tech = new Technique();
+        tech->autorelease();
+        tech->copy(**it);
+        _techniques.pushBack(tech);
     }
     
-    return nullptr;
+    switchTechnique(0);
 }
 
-Value Effect::getDefineValue(const std::string& name) const
+void Effect::switchTechnique(int techniqueIndex)
 {
-    for (const auto& def : _defineTemplates)
+    if (techniqueIndex >= _techniques.size())
     {
-        if (name == def.at("name").asString())
-            return def.at("value");
+        CCLOGINFO("Can not switch to technique with index [%d]", techniqueIndex);
+        return;
     }
-    
-    RENDERER_LOGW("Failed to set define %s, define not found.", name.c_str());
-    return Value::Null;
-}
-
-void Effect::setDefineValue(const std::string& name, const Value& value)
-{
-    for (auto& def : _defineTemplates)
-    {
-        if (name == def.at("name").asString())
-        {
-            def["value"] = value;
-            _cachedNameValues[name] = value;
-            return;
-        }
-    }
-}
-
-ValueMap* Effect::extractDefines()
-{
-//    for (auto& def : _defineTemplates)
-//        out.emplace(def.at("name").asString(), def.at("value"));
-
-    return &_cachedNameValues;
-}
-
-const Effect::Property& Effect::getProperty(const std::string& name) const
-{
-    static Property EMPTY_PROPERTY;
-    if (_properties.end() == _properties.find(name))
-        return EMPTY_PROPERTY;
-    else
-        return _properties.at(name);
-}
-
-void Effect::setProperty(const std::string& name, const Property& property)
-{
-    _properties[name] = property;
+    _technique = _techniques.at(techniqueIndex);
 }
 
 RENDERER_END

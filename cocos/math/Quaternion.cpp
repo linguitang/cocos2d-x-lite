@@ -258,6 +258,45 @@ float Quaternion::toAxisAngle(Vec3* axis) const
     return (2.0f * std::acos(q.w));
 }
 
+void Quaternion::toEuler(Vec3* e) const
+{
+    toEuler(*this, e);
+}
+
+void Quaternion::toEuler(const Quaternion& q, Vec3* e, bool outerZ)
+{
+    float bank = 0;
+    float heading = 0;
+    float attitude = 0;
+    const float test = q.x * q.y + q.z * q.w;
+    if (test > 0.499999) {
+        bank = 0; // default to zero
+        heading = CC_RADIANS_TO_DEGREES(2 * atan2(q.x, q.w));
+        attitude = 90;
+    }
+    else if (test < -0.499999) {
+        bank = 0; // default to zero
+        heading = -CC_RADIANS_TO_DEGREES(2 * atan2(q.x, q.w));
+        attitude = -90;
+    }
+    else {
+        const float sqx = q.x * q.x;
+        const float sqy = q.y * q.y;
+        const float sqz = q.z * q.z;
+        bank = CC_RADIANS_TO_DEGREES(atan2(2 * q.x * q.w - 2 * q.y * q.z, 1 - 2 * sqx - 2 * sqz));
+        heading = CC_RADIANS_TO_DEGREES(atan2(2 * q.y * q.w - 2 * q.x * q.z, 1 - 2 * sqy - 2 * sqz));
+        attitude = CC_RADIANS_TO_DEGREES(asin(2 * test));
+        if (outerZ) {
+            bank = -180 * CC_SIGN(bank + 1e-6) + bank;
+            heading = -180 * CC_SIGN(heading + 1e-6) + heading;
+            attitude = 180 * CC_SIGN(attitude + 1e-6) - attitude;
+        }
+    }
+    e->x = bank;
+    e->y = heading;
+    e->z = attitude;
+}
+
 void Quaternion::lerp(const Quaternion& q1, const Quaternion& q2, float t, Quaternion* dst)
 {
     GP_ASSERT(dst);

@@ -2,17 +2,17 @@
  Copyright (c) 2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
-
+ 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
-
+ 
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
-
+ 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -80,15 +80,15 @@ namespace {
         {
             GLsizei length;
             GL_CHECK(glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &length));
-            GLchar* src = (GLchar *)malloc(sizeof(GLchar) * length);
+            GLchar* source = (GLchar *)malloc(sizeof(GLchar) * length);
 
-            GL_CHECK(glGetShaderSource(shader, length, nullptr, src));
-            RENDERER_LOGE("ERROR: Failed to compile shader:\n%s", src);
+            GL_CHECK(glGetShaderSource(shader, length, nullptr, source));
+            RENDERER_LOGE("ERROR: Failed to compile shader:\n%s", source);
 
             std::string shaderLog = logForOpenGLShader(shader);
             RENDERER_LOGE("%s", shaderLog.c_str());
 
-            free(src);
+            free(source);
 
             *outShader = 0;
             return false;
@@ -226,9 +226,11 @@ namespace {
 
 RENDERER_BEGIN
 
-void Program::Uniform::setUniform(const void* value, UniformElementType elementType) const
+void Program::Uniform::setUniform(const void* value, UniformElementType elementType, size_t uniformCount) const
 {
-    GLsizei count = size == -1 ? 1 : size;
+    // uniformCount may bigger than size.
+    if (size >= 1 && size < uniformCount) uniformCount = size;
+    GLsizei count = size == -1 ? 1 : (GLsizei)uniformCount;
     _callback(location, count, value, elementType);
 }
 
@@ -320,6 +322,7 @@ void Program::link()
                 glGetActiveAttrib(program, i, length, nullptr, &attribute.size, &attribute.type, attribName);
                 attribName[length] = '\0';
                 attribute.name = attribName;
+                attribute.hashName = std::hash<std::string>{}(attribName);
                 // Query the pre-assigned attribute location
                 attribute.location = glGetAttribLocation(program, attribName);
 
@@ -359,6 +362,7 @@ void Program::link()
                 }
 
                 uniform.name = uniformName;
+                uniform.hashName = std::hash<std::string>{}(uniformName);
                 GL_CHECK(uniform.location = glGetUniformLocation(program, uniformName));
 
                 GLenum err = glGetError();

@@ -10,7 +10,6 @@ LOCAL_ARM_MODE := arm
 LOCAL_SRC_FILES := \
 ../scripting/js-bindings/manual/jsb_helper.cpp \
 IOBuffer.cpp \
-RenderInfoMgr.cpp \
 MeshBuffer.cpp \
 middleware-adapter.cpp \
 TypedArrayPool.cpp \
@@ -18,53 +17,86 @@ IOTypedArray.cpp \
 MiddlewareManager.cpp \
 ../scripting/js-bindings/auto/jsb_cocos2dx_editor_support_auto.cpp
 
+ifeq ($(USE_PARTICLE),1)
+LOCAL_SRC_FILES += \
+particle/ParticleSimulator.cpp \
+../scripting/js-bindings/auto/jsb_cocos2dx_particle_auto.cpp
+endif # USE_PARTICLE
+
 ifeq ($(USE_SPINE),1)
 LOCAL_SRC_FILES += \
-spine/Animation.c \
-spine/AnimationState.c \
-spine/AnimationStateData.c \
-spine/Array.c \
-spine/Atlas.c \
-spine/AtlasAttachmentLoader.c \
-spine/Attachment.c \
-spine/AttachmentLoader.c \
-spine/Bone.c \
-spine/BoneData.c \
-spine/BoundingBoxAttachment.c \
-spine/ClippingAttachment.c \
-spine/Color.c \
-spine/Event.c \
-spine/EventData.c \
-spine/extension.c \
-spine/IkConstraint.c \
-spine/IkConstraintData.c \
-spine/Json.c \
-spine/MeshAttachment.c \
-spine/PathAttachment.c \
-spine/PathConstraint.c \
-spine/PathConstraintData.c \
-spine/PointAttachment.c \
-spine/RegionAttachment.c \
-spine/Skeleton.c \
-spine/SkeletonBinary.c \
-spine/SkeletonBounds.c \
-spine/SkeletonClipping.c \
-spine/SkeletonData.c \
-spine/SkeletonJson.c \
-spine/Skin.c \
-spine/Slot.c \
-spine/SlotData.c \
-spine/TransformConstraint.c \
-spine/TransformConstraintData.c \
-spine/Triangulator.c \
-spine/VertexAttachment.c \
-spine/VertexEffect.c \
+spine/Animation.cpp \
+spine/AnimationState.cpp \
+spine/AnimationStateData.cpp \
+spine/Atlas.cpp \
+spine/AtlasAttachmentLoader.cpp \
+spine/Attachment.cpp \
+spine/AttachmentLoader.cpp \
+spine/AttachmentTimeline.cpp \
+spine/Bone.cpp \
+spine/BoneData.cpp \
+spine/BoundingBoxAttachment.cpp \
+spine/ClippingAttachment.cpp \
+spine/ColorTimeline.cpp \
+spine/Constraint.cpp \
+spine/ConstraintData.cpp \
+spine/CurveTimeline.cpp \
+spine/DeformTimeline.cpp \
+spine/DrawOrderTimeline.cpp \
+spine/Event.cpp \
+spine/EventData.cpp \
+spine/EventTimeline.cpp \
+spine/Extension.cpp \
+spine/IkConstraint.cpp \
+spine/IkConstraintData.cpp \
+spine/IkConstraintTimeline.cpp \
+spine/Json.cpp \
+spine/LinkedMesh.cpp \
+spine/MathUtil.cpp \
+spine/MeshAttachment.cpp \
+spine/PathAttachment.cpp \
+spine/PathConstraint.cpp \
+spine/PathConstraintData.cpp \
+spine/PathConstraintMixTimeline.cpp \
+spine/PathConstraintPositionTimeline.cpp \
+spine/PathConstraintSpacingTimeline.cpp \
+spine/PointAttachment.cpp \
+spine/RegionAttachment.cpp \
+spine/RotateTimeline.cpp \
+spine/RTTI.cpp \
+spine/ScaleTimeline.cpp \
+spine/ShearTimeline.cpp \
+spine/Skeleton.cpp \
+spine/SkeletonBinary.cpp \
+spine/SkeletonBounds.cpp \
+spine/SkeletonClipping.cpp \
+spine/SkeletonData.cpp \
+spine/SkeletonJson.cpp \
+spine/Skin.cpp \
+spine/Slot.cpp \
+spine/SlotData.cpp \
+spine/SpineObject.cpp \
+spine/TextureLoader.cpp \
+spine/Timeline.cpp \
+spine/TransformConstraint.cpp \
+spine/TransformConstraintData.cpp \
+spine/TransformConstraintTimeline.cpp \
+spine/TranslateTimeline.cpp \
+spine/Triangulator.cpp \
+spine/TwoColorTimeline.cpp \
+spine/Updatable.cpp \
+spine/VertexAttachment.cpp \
+spine/VertexEffect.cpp \
 spine-creator-support/AttachmentVertices.cpp \
-spine-creator-support/CreatorAttachmentLoader.cpp \
-spine-creator-support/SpineAnimation.cpp \
-spine-creator-support/SpineRenderer.cpp \
-spine-creator-support/spine-cocos2dx.cpp \
+spine-creator-support/SkeletonAnimation.cpp \
 spine-creator-support/SkeletonDataMgr.cpp \
+spine-creator-support/SkeletonRenderer.cpp \
+spine-creator-support/spine-cocos2dx.cpp \
+spine-creator-support/VertexEffectDelegate.cpp \
+spine-creator-support/SkeletonCacheMgr.cpp \
+spine-creator-support/SkeletonCache.cpp \
+spine-creator-support/SkeletonCacheAnimation.cpp \
+spine-creator-support/AttachUtil.cpp \
 ../scripting/js-bindings/manual/jsb_spine_manual.cpp \
 ../scripting/js-bindings/auto/jsb_cocos2dx_spine_auto.cpp
 endif # USE_SPINE
@@ -106,6 +138,10 @@ dragonbones-creator-support/CCArmatureDisplay.cpp \
 dragonbones-creator-support/CCFactory.cpp \
 dragonbones-creator-support/CCSlot.cpp \
 dragonbones-creator-support/CCTextureAtlasData.cpp \
+dragonbones-creator-support/ArmatureCache.cpp \
+dragonbones-creator-support/ArmatureCacheMgr.cpp \
+dragonbones-creator-support/CCArmatureCacheDisplay.cpp \
+dragonbones-creator-support/AttachUtil.cpp \
 ../scripting/js-bindings/manual/jsb_dragonbones_manual.cpp \
 ../scripting/js-bindings/auto/jsb_cocos2dx_dragonbones_auto.cpp
 endif # USE_DRAGONBONES

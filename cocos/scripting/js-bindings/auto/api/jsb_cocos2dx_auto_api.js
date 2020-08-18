@@ -469,18 +469,6 @@ str
 },
 
 /**
- * @method listFilesRecursively
- * @param {String} arg0
- * @param {Array} arg1
- */
-listFilesRecursively : function (
-str, 
-array 
-)
-{
-},
-
-/**
  * @method getWritablePath
  * @return {String}
  */
@@ -518,10 +506,10 @@ getInstance : function (
 jsb.Device = {
 
 /**
- * @method getNetworkType
- * @return {cc.Device::NetworkType}
+ * @method getDevicePixelRatio
+ * @return {int}
  */
-getNetworkType : function (
+getDevicePixelRatio : function (
 )
 {
     return 0;
@@ -565,6 +553,16 @@ setKeepScreenOn : function (
 bool 
 )
 {
+},
+
+/**
+ * @method getNetworkType
+ * @return {cc.Device::NetworkType}
+ */
+getNetworkType : function (
+)
+{
+    return 0;
 },
 
 /**
@@ -699,6 +697,16 @@ float
 lineTo : function (
 float, 
 float 
+)
+{
+},
+
+/**
+ * @method setPremultiply
+ * @param {bool} arg0
+ */
+setPremultiply : function (
+bool 
 )
 {
 },
@@ -954,6 +962,50 @@ closePath : function (
 CanvasRenderingContext2D : function (
 float, 
 float 
+)
+{
+},
+
+};
+
+/**
+ * @class LabelRenderer
+ */
+jsb.LabelRenderer = {
+
+/**
+ * @method setEffect
+ * @param {cc.renderer::EffectVariant} arg0
+ */
+setEffect : function (
+effectvariant 
+)
+{
+},
+
+/**
+ * @method render
+ */
+render : function (
+)
+{
+},
+
+/**
+ * @method bindNodeProxy
+ * @param {cc.renderer::NodeProxy} arg0
+ */
+bindNodeProxy : function (
+nodeproxy 
+)
+{
+},
+
+/**
+ * @method LabelRenderer
+ * @constructor
+ */
+LabelRenderer : function (
 )
 {
 },

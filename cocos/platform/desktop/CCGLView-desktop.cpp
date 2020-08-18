@@ -184,6 +184,7 @@ GLView::GLView(Application* application, const std::string& name, int x, int y, 
     computeScale();
     
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_mainFBO);
+    Application::getInstance()->updateViewSize(width * _scale, height * _scale);
 }
 
 GLView::~GLView()
@@ -237,11 +238,9 @@ namespace
 {
     void dispatchMouseEvent(double x, double y, unsigned short button, cocos2d::MouseEvent::Type type)
     {
-        uint8_t devicePixelRatio = cocos2d::Application::getInstance()->getDevicePixelRatio();
-
         cocos2d::MouseEvent mouseEvent;
-        mouseEvent.x = x / devicePixelRatio;
-        mouseEvent.y = y / devicePixelRatio;
+        mouseEvent.x = x;
+        mouseEvent.y = y;
         mouseEvent.button = button;
         mouseEvent.type = type;
         cocos2d::EventDispatcher::dispatchMouseEvent(mouseEvent);
@@ -436,14 +435,16 @@ void GLView::onGLFWCharCallback(GLFWwindow* /*window*/, unsigned int character)
 void GLView::onGLFWWindowIconifyCallback(GLFWwindow* /*window*/, int iconified)
 {
     if (iconified == GL_TRUE)
-        _application->applicationDidEnterBackground();
+        _application->onPause();
     else
-        _application->applicationWillEnterForeground();
+        _application->onResume();
 }
 
 void GLView::onGLFWWindowSizeFunCallback(GLFWwindow *window, int width, int height)
 {
-    EventDispatcher::dispatchResizeEvent(width, height);
+    int targetWidth = width * _scale, targetHeight = height * _scale;
+    Application::getInstance()->updateViewSize(targetWidth, targetHeight);
+    EventDispatcher::dispatchResizeEvent(targetWidth, targetHeight);
 }
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)

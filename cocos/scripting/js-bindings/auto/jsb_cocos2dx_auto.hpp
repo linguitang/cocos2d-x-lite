@@ -47,7 +47,6 @@ SE_DECLARE_FUNC(js_engine_FileUtils_isDirectoryExist);
 SE_DECLARE_FUNC(js_engine_FileUtils_setDefaultResourceRootPath);
 SE_DECLARE_FUNC(js_engine_FileUtils_getSearchResolutionsOrder);
 SE_DECLARE_FUNC(js_engine_FileUtils_createDirectory);
-SE_DECLARE_FUNC(js_engine_FileUtils_listFilesRecursively);
 SE_DECLARE_FUNC(js_engine_FileUtils_getWritablePath);
 SE_DECLARE_FUNC(js_engine_FileUtils_setDelegate);
 SE_DECLARE_FUNC(js_engine_FileUtils_getInstance);
@@ -57,11 +56,12 @@ extern se::Class* __jsb_cocos2d_Device_class;
 
 bool js_register_cocos2d_Device(se::Object* obj);
 bool register_all_engine(se::Object* obj);
-SE_DECLARE_FUNC(js_engine_Device_getNetworkType);
+SE_DECLARE_FUNC(js_engine_Device_getDevicePixelRatio);
 SE_DECLARE_FUNC(js_engine_Device_setAccelerometerEnabled);
 SE_DECLARE_FUNC(js_engine_Device_setAccelerometerInterval);
 SE_DECLARE_FUNC(js_engine_Device_vibrate);
 SE_DECLARE_FUNC(js_engine_Device_setKeepScreenOn);
+SE_DECLARE_FUNC(js_engine_Device_getNetworkType);
 SE_DECLARE_FUNC(js_engine_Device_getBatteryLevel);
 SE_DECLARE_FUNC(js_engine_Device_getDeviceRotation);
 SE_DECLARE_FUNC(js_engine_Device_getDPI);
@@ -91,6 +91,7 @@ bool register_all_engine(se::Object* obj);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_restore);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_moveTo);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_lineTo);
+SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_setPremultiply);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_setTransform);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_stroke);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_measureText);
@@ -110,4 +111,14 @@ SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_translate);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_createLinearGradient);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_closePath);
 SE_DECLARE_FUNC(js_engine_CanvasRenderingContext2D_CanvasRenderingContext2D);
+
+extern se::Object* __jsb_cocos2d_LabelRenderer_proto;
+extern se::Class* __jsb_cocos2d_LabelRenderer_class;
+
+bool js_register_cocos2d_LabelRenderer(se::Object* obj);
+bool register_all_engine(se::Object* obj);
+SE_DECLARE_FUNC(js_engine_LabelRenderer_setEffect);
+SE_DECLARE_FUNC(js_engine_LabelRenderer_render);
+SE_DECLARE_FUNC(js_engine_LabelRenderer_bindNodeProxy);
+SE_DECLARE_FUNC(js_engine_LabelRenderer_LabelRenderer);
 

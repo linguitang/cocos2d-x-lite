@@ -2,17 +2,17 @@
  Copyright (c) 2018 Xiamen Yaji Software Co., Ltd.
 
  http://www.cocos2d-x.org
-
+ 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
-
+ 
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
-
+ 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -45,10 +45,10 @@ VertexBuffer::~VertexBuffer()
 bool VertexBuffer::init(DeviceGraphics* device, VertexFormat* format, Usage usage, const void* data, size_t dataByteLength, uint32_t numVertices)
 {
     _device = device;
-    _format = format;
-    CC_SAFE_RETAIN(_format);
+    setFormat(format);
     _usage = usage;
     _numVertices = numVertices;
+    _needExpandDataStore = true;
 
     // calculate bytes
     _bytes = _format->_bytes * numVertices;
@@ -82,27 +82,29 @@ void VertexBuffer::update(uint32_t offset, const void* data, size_t dataByteLeng
         return;
     }
 
-    if (data && dataByteLength + offset > _bytes) {
-        RENDERER_LOGE("Failed to update vertex buffer data, bytes exceed.");
-        return;
+    if (data && dataByteLength + offset > _bytes)
+    {
+        if (offset) {
+            RENDERER_LOGE("Failed to update index buffer data, bytes exceed.");
+            return;
+        }
+        else {
+            _needExpandDataStore = true;
+            _bytes = offset + dataByteLength;
+            _numVertices = _bytes / _format->_bytes;
+        }
     }
 
     GLenum glUsage = (GLenum)_usage;
     ccBindBuffer(GL_ARRAY_BUFFER, _glID);
-    if (!data)
+    if (_needExpandDataStore)
     {
-        glBufferData(GL_ARRAY_BUFFER, _bytes, nullptr, glUsage);
+        glBufferData(GL_ARRAY_BUFFER, _bytes, (const GLvoid*)data, glUsage);
+        _needExpandDataStore = false;
     }
     else
     {
-        if (offset > 0)
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)offset, (GLsizeiptr)dataByteLength, (const GLvoid*)data);
-        }
-        else
-        {
-            glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)dataByteLength, data, glUsage);
-        }
+        glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)offset, (GLsizeiptr)dataByteLength, (const GLvoid*)data);
     }
     ccBindBuffer(GL_ARRAY_BUFFER, 0);
 }

@@ -25,10 +25,10 @@ THE SOFTWARE.
  ****************************************************************************/
 package org.cocos2dx.lib;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -51,6 +51,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
@@ -470,6 +471,16 @@ public class Cocos2dxHelper {
         }
     }
 
+    private static int displayMetricsToDPI(DisplayMetrics metrics)
+    {
+        if(metrics.xdpi != metrics.ydpi) {
+            Log.w(Cocos2dxHelper.TAG, "xdpi != ydpi, use (xdpi + ydpi)/2 instead.");
+            return (int) ((metrics.xdpi + metrics.ydpi) / 2.0);
+        } else {
+            return (int)metrics.xdpi;
+        }
+    }
+
     public static int getDPI()
     {
         if (sActivity != null)
@@ -481,8 +492,15 @@ public class Cocos2dxHelper {
                 Display d = wm.getDefaultDisplay();
                 if (d != null)
                 {
+                    try {
+                        Method getRealMetrics = d.getClass().getMethod("getRealMetrics", metrics.getClass());
+                        getRealMetrics.invoke(d, metrics);
+                        return displayMetricsToDPI(metrics);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     d.getMetrics(metrics);
-                    return (int)(metrics.density*160.0f);
+                    return displayMetricsToDPI(metrics);
                 }
             }
         }
@@ -569,7 +587,9 @@ public class Cocos2dxHelper {
         Cocos2dxAccelerometer.DeviceMotionEvent event = Cocos2dxHelper.sCocos2dxAccelerometer.getDeviceMotionEvent();
         sDeviceMotionValues[0] = event.acceleration.x;
         sDeviceMotionValues[1] = event.acceleration.y;
-        sDeviceMotionValues[2] = event.acceleration.z;
+        // Issue https://github.com/cocos-creator/2d-tasks/issues/2532
+        // use negative event.acceleration.z to match iOS value
+        sDeviceMotionValues[2] = - event.acceleration.z;
 
         sDeviceMotionValues[3] = event.accelerationIncludingGravity.x;
         sDeviceMotionValues[4] = event.accelerationIncludingGravity.y;
@@ -599,5 +619,46 @@ public class Cocos2dxHelper {
             e.printStackTrace();
         }
         return Surface.ROTATION_0;
+    }
+
+    public static float[] getSafeArea() {
+
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+
+            do {
+                Object windowInsectObj = getActivity().getWindow().getDecorView().getRootWindowInsets();
+
+                if(windowInsectObj == null) break;
+
+                Class<?> windowInsets = WindowInsets.class;
+                try {
+                    Method wiGetDisplayCutout = windowInsets.getMethod("getDisplayCutout");
+                    Object cutout = wiGetDisplayCutout.invoke(windowInsectObj);
+
+                    if(cutout == null) break;
+
+                    Class<?> displayCutout = cutout.getClass();
+                    Method dcGetLeft = displayCutout.getMethod("getSafeInsetLeft");
+                    Method dcGetRight = displayCutout.getMethod("getSafeInsetRight");
+                    Method dcGetBottom = displayCutout.getMethod("getSafeInsetBottom");
+                    Method dcGetTop = displayCutout.getMethod("getSafeInsetTop");
+
+                    if (dcGetLeft != null && dcGetRight != null && dcGetBottom != null && dcGetTop != null) {
+                        int left = (Integer) dcGetLeft.invoke(cutout);
+                        int right = (Integer) dcGetRight.invoke(cutout);
+                        int top = (Integer) dcGetTop.invoke(cutout);
+                        int bottom = (Integer) dcGetBottom.invoke(cutout);
+                        return new float[]{top, left, bottom, right};
+                    }
+                } catch (NoSuchMethodException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                    e.printStackTrace();
+                }
+            }while(false);
+        }
+        return new float[]{0,0,0,0};
     }
 }

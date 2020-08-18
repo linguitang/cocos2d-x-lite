@@ -418,6 +418,8 @@ namespace se {
     bool Object::getProperty(const char* name, Value* data)
     {
         assert(data != nullptr);
+        data->setUndefined();
+
         JSStringRef jsName = JSStringCreateWithUTF8CString(name);
         bool exist = JSObjectHasProperty(__cx, _obj, jsName);
 
@@ -494,6 +496,21 @@ namespace se {
         return internal::defineProperty(this, name, getter, setter);
     }
 
+    bool Object::deleteProperty(const char *name)
+    {
+        bool ret = true;
+        JSStringRef jsName = JSStringCreateWithUTF8CString(name);
+        JSValueRef exception = nullptr;
+        JSObjectDeleteProperty(__cx, _obj, jsName, &exception);
+        if (exception != nullptr)
+        {
+            ScriptEngine::getInstance()->_clearException(exception);
+            ret = false;
+        }
+        JSStringRelease(jsName);
+        return ret;
+    }
+    
     bool Object::call(const ValueArray& args, Object* thisObject, Value* rval/* = nullptr*/)
     {
         assert(isFunction());
@@ -515,7 +532,7 @@ namespace se {
         JSValueRef exception = nullptr;
         JSValueRef rcValue = JSObjectCallAsFunction(__cx, _obj, contextObject, args.size(), jsArgs, &exception);
         free(jsArgs);
-
+        
         if (rcValue != nullptr)
         {
             if (rval != nullptr && !JSValueIsUndefined(__cx, rcValue))
@@ -524,7 +541,7 @@ namespace se {
             }
             return true;
         }
-
+        
         // Function call failed, try to output exception
         if (exception != nullptr)
         {

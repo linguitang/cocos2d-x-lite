@@ -32,8 +32,16 @@
 #include "dragonbones-creator-support/CCSlot.h"
 #include "IOTypedArray.h"
 #include "MiddlewareManager.h"
+#include "renderer/scene/NodeProxy.hpp"
+#include "base/CCMap.h"
+#include "middleware-adapter.h"
+#include "renderer/scene/assembler/CustomAssembler.hpp"
+#include "renderer/Types.h"
 
 DRAGONBONES_NAMESPACE_BEGIN
+
+class RealTimeAttachUtil;
+
 /**
  * CCArmatureDisplay is a armature tree.It can add or remove a childArmature.
  * It will not save vertices and indices.Only CCSlot will save these info.
@@ -75,6 +83,10 @@ public:
     /**
      * @inheritDoc
      */
+    virtual void dbRender() override;
+    /**
+     * @inheritDoc
+     */
     virtual void dispose(bool disposeProxy = true) override;
     /**
      * @inheritDoc
@@ -95,6 +107,17 @@ public:
     /**
      * @inheritDoc
      */
+    virtual uint32_t getRenderOrder() const override;
+    
+	typedef std::function<void(EventObject*)> dbEventCallback;
+	void setDBEventCallback(dbEventCallback callback)
+	{
+		_dbEventCallback = callback;
+	}
+
+    /**
+     * @inheritDoc
+     */
     inline virtual Armature* getArmature() const override
     {
         return _armature;
@@ -111,50 +134,29 @@ public:
      * @return debug data,it's a Float32Array,
      * format |debug bones length|[beginX|beginY|toX|toY|...loop...]
      */
-    se_object_ptr getDebugData() const
-    {
-        if (_debugBuffer)
-        {
-            return _debugBuffer->getTypeArray();
-        }
-        return nullptr;
-    }
+    se_object_ptr getDebugData() const;
     
-    /**
-     * @return render info offset,it's a Uint32Array,
-     * format |render info offset|
-     */
-    se_object_ptr getRenderInfoOffset() const
-    {
-        if (_renderInfoOffset)
-        {
-            return _renderInfoOffset->getTypeArray();
-        }
-        return nullptr;
-    }
+    void bindNodeProxy(cocos2d::renderer::NodeProxy* node);
     
-    void setColor(cocos2d::Color4B& color)
-    {
-        _nodeColor.r = color.r / 255.0f;
-        _nodeColor.g = color.g / 255.0f;
-        _nodeColor.b = color.b / 255.0f;
-        _nodeColor.a = color.a / 255.0f;
-    }
+    void setEffect(cocos2d::renderer::EffectVariant* effect);
+    
+    void setAttachUtil(RealTimeAttachUtil* attachUtil);
+    
+    void setColor(cocos2d::Color4B& color);
     
     void setDebugBonesEnabled(bool enabled)
     {
         _debugDraw = enabled;
     }
     
+    void setBatchEnabled (bool enabled)
+    {
+        _batch = enabled;
+    }
+    
     void setOpacityModifyRGB (bool value)
     {
         _premultipliedAlpha = value;
-    }
-    
-    typedef std::function<void(EventObject*)> dbEventCallback;
-    void setDBEventCallback(dbEventCallback callback)
-    {
-        _dbEventCallback = callback;
     }
     
     /**
@@ -168,28 +170,30 @@ public:
      * @return root display,if this diplay is root,then return itself.
      */
     CCArmatureDisplay* getRootDisplay();
-    
 private:
-    std::map<std::string,bool> _listenerIDMap;
-    cocos2d::middleware::IOTypedArray* _renderInfoOffset = nullptr;
+    std::map<std::string, bool> _listenerIDMap;
     cocos2d::middleware::IOTypedArray* _debugBuffer = nullptr;
     cocos2d::Color4F _nodeColor = cocos2d::Color4F::WHITE;
     
     int _preBlendMode = -1;
-    int _preTextureIndex = -1;
-    int _curTextureIndex = -1;
-    int _curBlendSrc = -1;
-    int _curBlendDst = -1;
+    GLuint _preTextureIndex = -1;
+    GLuint _curTextureIndex = -1;
+    cocos2d::renderer::BlendFactor _curBlendSrc;
+    cocos2d::renderer::BlendFactor _curBlendDst;
     
     int _preISegWritePos = -1;
     int _curISegLen = 0;
     
     int _debugSlotsLen = 0;
     int _materialLen = 0;
-    std::size_t _materialLenOffset = -1;
     
+    bool _batch = false;
     bool _premultipliedAlpha = false;
     dbEventCallback _dbEventCallback = nullptr;
+    cocos2d::renderer::NodeProxy* _nodeProxy = nullptr;
+    cocos2d::renderer::EffectVariant* _effect = nullptr;
+    cocos2d::renderer::CustomAssembler* _assembler = nullptr;
+    RealTimeAttachUtil* _attachUtil = nullptr;
 };
 
 DRAGONBONES_NAMESPACE_END

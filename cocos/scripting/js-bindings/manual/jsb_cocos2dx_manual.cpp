@@ -32,8 +32,11 @@
 
 #include "storage/local-storage/LocalStorage.h"
 #include "cocos2d.h"
+#include <sstream>
 
 using namespace cocos2d;
+
+extern se::Object* __jsb_cocos2d_FileUtils_proto;
 
 static bool jsb_cocos2dx_empty_func(se::State& s)
 {
@@ -467,6 +470,25 @@ static bool js_CanvasRenderingContext2D_setCanvasBufferUpdatedCallback(se::State
 }
 SE_BIND_FUNC(js_CanvasRenderingContext2D_setCanvasBufferUpdatedCallback)
 
+static bool js_CanvasRenderingContext2D_setPremultiply(se::State& s)
+{
+    cocos2d::CanvasRenderingContext2D* cobj = (cocos2d::CanvasRenderingContext2D*)s.nativeThisObject();
+    SE_PRECONDITION2(cobj, false, "js_CanvasRenderingContext2D_setPremultiply : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 1) {
+        bool arg0;
+        ok &= seval_to_boolean(args[0], &arg0);
+        SE_PRECONDITION2(ok, false, "js_CanvasRenderingContext2D_setPremultiply : Error processing arguments");
+        cobj->setPremultiply(arg0);
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
+    return false;
+}
+SE_BIND_FUNC(js_CanvasRenderingContext2D_setPremultiply)
+
 static se::Object* __deviceMotionObject = nullptr;
 static bool JSB_getDeviceMotionValue(se::State& s)
 {
@@ -528,9 +550,228 @@ static bool register_canvas_context2d(se::Object* obj)
     _SE_DEFINE_PROP(CanvasRenderingContext2D, globalCompositeOperation)
 
     __jsb_cocos2d_CanvasRenderingContext2D_proto->defineFunction("_setCanvasBufferUpdatedCallback", _SE(js_CanvasRenderingContext2D_setCanvasBufferUpdatedCallback));
+    
+    __jsb_cocos2d_CanvasRenderingContext2D_proto->defineFunction("_setPremultiply", _SE(js_CanvasRenderingContext2D_setPremultiply));
 
     se::ScriptEngine::getInstance()->clearException();
 
+    return true;
+}
+
+static bool js_engine_FileUtils_listFilesRecursively(se::State& s)
+{
+    cocos2d::FileUtils* cobj = (cocos2d::FileUtils*)s.nativeThisObject();
+    SE_PRECONDITION2(cobj, false, "js_engine_FileUtils_listFilesRecursively : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 2) {
+        std::string arg0;
+        std::vector<std::string> arg1;
+        ok &= seval_to_std_string(args[0], &arg0);
+        SE_PRECONDITION2(ok, false, "js_engine_FileUtils_listFilesRecursively : Error processing arguments");
+        cobj->listFilesRecursively(arg0, &arg1);
+        se::Object *list = args[1].toObject();
+        SE_PRECONDITION2(args[1].isObject() && list->isArray(), false, "js_engine_FileUtils_listFilesRecursively : 2nd argument should be an Array");
+        for(int i = 0; i < arg1.size(); i++ ) {
+            list->setArrayElement(i, se::Value(arg1[i]));
+        }
+        list->setProperty("length", se::Value(arg1.size()));
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 2);
+    return false;
+}
+SE_BIND_FUNC(js_engine_FileUtils_listFilesRecursively)
+
+static bool register_filetuils_ext(se::Object* obj) {
+    __jsb_cocos2d_FileUtils_proto->defineFunction("listFilesRecursively", _SE(js_engine_FileUtils_listFilesRecursively));
+    return true;
+}
+
+static bool js_se_setExceptionCallback(se::State &s) {
+    
+    auto &args = s.args();
+    if (args.size() != 1 || !args[0].isObject() || !args[0].toObject()->isFunction()) {
+        SE_REPORT_ERROR("expect 1 arguments of Function type, %d provided", (int)args.size());
+        return false;
+    }
+
+    se::Object *objFunc = args[0].toObject();
+    // se::Value::reset will invoke decRef() while destroying s.args()
+    // increase ref here
+    objFunc->incRef(); 
+    if (s.thisObject()) {
+        s.thisObject()->attachObject(objFunc); // prevent GC
+    } else {
+        //prevent GC in C++ & JS
+        objFunc->root();
+    }
+    
+    se::ScriptEngine::getInstance()->setExceptionCallback([objFunc](const char *location, const char *message, const char *stack) {
+        se::ValueArray jsArgs;
+        jsArgs.resize(3);
+        jsArgs[0] = se::Value(location);
+        jsArgs[1] = se::Value(message);
+        jsArgs[2] = se::Value(stack);
+        objFunc->call(jsArgs, nullptr);
+    });
+    return true;
+}
+SE_BIND_FUNC(js_se_setExceptionCallback)
+
+
+#define DESCRIPT_FIELD(kls, field, field_type) do {\
+    ss << "\"" << #field <<  "\": " << "{" ; \
+    ss << "\"type\": \"" << field_type << "\"," ;  \
+    ss << "\"offset\": " << offsetof(kls, field) << ",";   \
+    ss << "\"size\": " << sizeof(((kls*)nullptr)->field);   \
+    ss << "}";} while(false)
+
+static bool js_engine_LabelRenderer_init(se::State& s)
+{
+    cocos2d::LabelRenderer* cobj = (cocos2d::LabelRenderer*)s.nativeThisObject();
+    SE_PRECONDITION2(cobj, false, "js_engine_LabelRenderer_init : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    se::Object *self = s.thisObject();
+    CC_UNUSED bool ok = true;
+    if (argc == 0) {
+                
+        cocos2d::LabelRenderer::LabelRendererConfig config;
+        cocos2d::LabelLayoutInfo layout;
+        
+        se::Object *cfgBufferObj = se::Object::createArrayBufferObject(nullptr, sizeof(config));
+        se::Object *layoutBufferObj = se::Object::createArrayBufferObject(nullptr, sizeof(layout));
+        
+        // attach to js object
+        self->setProperty("_cfg", se::Value(cfgBufferObj));
+        self->setProperty("_layout", se::Value(layoutBufferObj));
+        
+    
+        // attach to C++ object
+        size_t len;
+        uint8_t *pcfg = nullptr, *playout = nullptr;
+        cfgBufferObj->getArrayBufferData(&pcfg, &len);
+        layoutBufferObj->getArrayBufferData(&playout, &len);
+        new (pcfg) cocos2d::LabelRenderer::LabelRendererConfig();
+        new (playout) cocos2d::LabelLayoutInfo();
+        cobj->bindSharedBlock(self, pcfg, playout);
+        
+        
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 2);
+    return false;
+}
+SE_BIND_FUNC(js_engine_LabelRenderer_init)
+
+static void js_engine_LabelRenderer_export_structs_info(se::Object *obj)
+{
+    // Get the ns
+    se::Value nsVal;
+    if (!obj->getProperty("jsb", &nsVal))
+    {
+        se::HandleObject jsobj(se::Object::createPlainObject());
+        nsVal.setObject(jsobj);
+        obj->setProperty("jsb", nsVal);
+    }
+    se::Object* ns = nsVal.toObject();
+ 
+    se::Value labelRenderValue;
+    ns->getProperty("LabelRenderer", &labelRenderValue);
+    
+    assert(labelRenderValue.isObject());
+    se::Object *self = labelRenderValue.toObject();
+    
+    {
+        union endianess_union {
+            int32_t i32;
+            uint8_t bytes[4];
+        } test_value;
+        test_value.i32 = 0x01020304;
+        bool isLittleEndian  = test_value.bytes[0] == 0x04;
+        ns->setProperty("__isLittleEndian__", se::Value(isLittleEndian));
+    }
+    {
+        std::stringstream ss;
+        ss << "{";
+        DESCRIPT_FIELD(cocos2d::LabelRenderer::LabelRendererConfig, updateFlags, "int32");
+        ss << ",";
+        DESCRIPT_FIELD(cocos2d::LabelRenderer::LabelRendererConfig, fontSize, "float");
+        ss << ",";
+        DESCRIPT_FIELD(cocos2d::LabelRenderer::LabelRendererConfig, fontSizeRetina, "float");
+        ss << "}";
+        se::Object *cfgFields = se::Object::createJSONObject(ss.str());
+        assert(cfgFields);
+        self->setProperty("_cfgFields", se::Value(cfgFields));
+    }
+    {
+        std::stringstream ss;
+        ss << "{";
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, lineHeight, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, outlineSize, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, spaceX, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, width, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, height, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, anchorX, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, anchorY, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, shadowX, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, shadowY, "float");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, shadowBlur, "int32");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, shadowColor, "Color4B");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, color, "Color4B");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, outlineColor, "Color4B");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, wrap, "bool");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, bold, "bool");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, italic, "bool");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, underline, "bool");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, valign, "int8");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, halign, "int8");
+        ss << "," ;
+        DESCRIPT_FIELD(cocos2d::LabelLayoutInfo, overflow, "int8");
+        ss << "}";
+        se::Object *cfgFields = se::Object::createJSONObject(ss.str());
+        assert(cfgFields);
+        self->setProperty("_layoutFields", se::Value(cfgFields));
+    }
+    
+}
+
+static bool register_labelrenderer_ext(se::Object *obj)
+{
+    __jsb_cocos2d_LabelRenderer_proto->defineFunction("init", _SE(js_engine_LabelRenderer_init));
+    js_engine_LabelRenderer_export_structs_info(obj);
+    return true;
+}
+
+static bool register_se_setExceptionCallback(se::Object *obj)
+{
+    se::Value jsb;
+    if (!obj->getProperty("jsb", &jsb)) {
+        jsb.setObject(se::Object::createPlainObject());
+        obj->setProperty("jsb", jsb);
+    }
+    auto *jsbObj = jsb.toObject();
+    jsbObj->defineFunction("onError", _SE(js_se_setExceptionCallback));
     return true;
 }
 
@@ -540,6 +781,9 @@ bool register_all_cocos2dx_manual(se::Object* obj)
     register_sys_localStorage(obj);
     register_device(obj);
     register_canvas_context2d(obj);
+    register_filetuils_ext(obj);
+    register_labelrenderer_ext(obj);
+    register_se_setExceptionCallback(obj);
     return true;
 }
 

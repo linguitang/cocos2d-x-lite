@@ -26,44 +26,96 @@
 
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include "base/CCRef.h"
 #include "base/CCValue.h"
 #include "../Macro.h"
 #include "Technique.h"
+#include "Pass.h"
+#include "EffectBase.h"
 
 RENDERER_BEGIN
 
-class Effect : public Ref
+/**
+ * @addtogroup renderer
+ * @{
+ */
+
+/**
+ * @brief Fundamental class of material system, contains techniques, shader template define settings and uniform properties.\n
+ * JS API: renderer.Effect
+ * @code
+ * let pass = new renderer.Pass('sprite');
+ * pass.setDepth(false, false);
+ * pass.setCullMode(gfx.CULL_NONE);
+ * let mainTech = new renderer.Technique(
+ *     ['transparent'],
+ *     [
+ *         { name: 'texture', type: renderer.PARAM_TEXTURE_2D },
+ *         { name: 'color', type: renderer.PARAM_COLOR4 }
+ *     ],
+ *     [
+ *         pass
+ *     ]
+ * );
+ * let effect = new renderer.Effect(
+ *     [
+ *         mainTech
+ *     ],
+ *     {
+ *         'color': {r: 1, g: 1, b: 1, a: 1}
+ *     },
+ *     [
+ *         { name: 'useTexture', value: true },
+ *         { name: 'useModel', value: false },
+ *         { name: 'alphaTest', value: false },
+ *         { name: 'useColor', value: true }
+ *     ]
+ * );
+ * @endcode
+ */
+class Effect : public EffectBase
 {
 public:
-    
     using Property = Technique::Parameter;
     
+    /*
+     * @brief The default constructor.
+     */
     Effect();
+    /*
+     *  @brief The default destructor.
+     */
     ~Effect();
     
-    void init(const Vector<Technique*>& techniques,
-              const std::unordered_map<std::string, Property>& properties,
-              const std::vector<ValueMap>& defineTemplates);
+    /*
+     * @brief Initialize with techniques, properties and define settings.
+     * @param[in] techniques All techniques in an array
+     * @param[in] properties All properties in a map
+     * @param[in] defineTemplates All defines and their value in a map
+     */
+    void init(const Vector<Technique*>& techniques);
+    /**
+     *  @brief Clears techniques and define list.
+     */
     void clear();
+
+    /**
+     *  @brief Deep copy from other effect.
+     */
+    void copy(const Effect* effect);
     
-    Technique* getTechnique(const std::string& stage) const;
-    const Vector<Technique*>& getTechniques() const { return _techniques; }
-    Value getDefineValue(const std::string& name) const;
-    const std::vector<ValueMap>& getDefines() const { return _defineTemplates; }
-    void setDefineValue(const std::string& name, const Value& value);
-    ValueMap* extractDefines();
+    Vector<Pass*>& getPasses() { return _technique->getPasses(); }
+    const Vector<Pass*>& getPasses() const { return _technique->getPasses(); }
     
-    const Property& getProperty(const std::string& name) const;
-    void setProperty(const std::string& name, const Property& property);
-    
-    const std::unordered_map<std::string, Property>& getProperties() const { return _properties; }
-    
+    void switchTechnique(int techniqueIndex);
 private:
     Vector<Technique*> _techniques;
-    std::vector<ValueMap> _defineTemplates;
-    ValueMap _cachedNameValues;
-    std::unordered_map<std::string, Property> _properties;
+    Technique* _technique;
+    
 };
+
+// end of renderer group
+/// @}
 
 RENDERER_END

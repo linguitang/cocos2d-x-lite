@@ -28,18 +28,19 @@
 
  ****************************************************************************/
 #include "websockets/libwebsockets.h"
-#include <string>
-#include <vector>
-#include <mutex>
-#include <memory>  // for std::shared_ptr
+
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
-#include <thread>
-#include <mutex>
-#include <queue>
-#include <list>
-#include <signal.h>
 #include <errno.h>
+#include <list>
+#include <mutex>
+#include <memory>  // for std::shared_ptr
+#include <queue>
+#include <string>
+#include <signal.h>
+#include <thread>
+#include <vector>
 #include "network/WebSocket.h"
 #include "network/Uri.h"
 #include "base/CCScheduler.h"
@@ -451,20 +452,11 @@ void WsThreadHelper::onSubThreadLoop()
                 {
                     ++iter;
                 }
-
-
             }
         }
         __wsHelper->_subThreadWsMessageQueueMutex.unlock();
-
-        // The second parameter passed to 'lws_service' means the timeout in milliseconds while polling websocket events.
-        // The lower value the better, otherwise, it may trigger high CPU usage.
-        // We set 2ms in 'lws_service' then sleep 3ms to make lower CPU cost.
-        // Since messages are received in websocket thread and user code is in cocos thread, we need to post event to
-        // cocos thread and trigger user callbacks by 'Scheduler::performFunctionInCocosThread'. If game's fps is set
-        // to 60 (16.66ms), the latency will be (2ms + 3ms + 16.66ms + internet delay) > 21ms
-        lws_service(__wsContext, 2);
-        std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        // Cause delay 4ms for event WS_MSG_TO_SUBTHREAD_CREATE_CONNECTION
+        lws_service(__wsContext, 4);
     }
 }
 
@@ -563,11 +555,10 @@ public:
             return false;
         }
 
-        _data.reserve(LWS_PRE + len);
-        _data.resize(LWS_PRE, 0x00);
+        _data.resize(LWS_PRE + len);
         if (len > 0)
         {
-            _data.insert(_data.end(), buf, buf + len);
+            std::copy(buf, buf+len, _data.begin() + LWS_PRE);
         }
 
         _payload = _data.data() + LWS_PRE;

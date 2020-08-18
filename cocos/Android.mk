@@ -26,6 +26,7 @@ math/Quaternion.cpp \
 math/Vec2.cpp \
 math/Vec3.cpp \
 math/Vec4.cpp \
+math/Mat3.cpp \
 base/CCAutoreleasePool.cpp \
 base/CCConfiguration.cpp \
 base/CCData.cpp \
@@ -41,6 +42,7 @@ base/ccTypes.cpp \
 base/ccUTF8.cpp \
 base/ccUtils.cpp \
 base/etc1.cpp \
+base/etc2.cpp \
 base/pvr.cpp \
 base/CCLog.cpp \
 base/CCScheduler.cpp \
@@ -84,7 +86,15 @@ scripting/js-bindings/event/EventDispatcher.cpp \
 ../external/sources/unzip/unzip.cpp \
 ../external/sources/ConvertUTF/ConvertUTFWrapper.cpp \
 ../external/sources/ConvertUTF/ConvertUTF.c \
-ui/edit-box/EditBox-android.cpp
+../external/sources/edtaa3func/edtaa3func.cpp \
+../external/sources/edtaa3func/edtaa3func.h \
+ui/edit-box/EditBox-android.cpp \
+2d/CCFontAtlas.cpp \
+2d/CCFontFreetype.cpp \
+2d/CCLabelLayout.cpp \
+2d/CCTTFLabelAtlasCache.cpp \
+2d/CCTTFLabelRenderer.cpp \
+2d/CCTTFTypes.cpp
 
 # v8 debugger source files, always enable it
 LOCAL_SRC_FILES += \
@@ -136,6 +146,31 @@ renderer/renderer/Scene.cpp \
 renderer/renderer/Technique.cpp \
 renderer/renderer/View.cpp \
 renderer/renderer/ForwardRenderer.cpp \
+renderer/scene/assembler/Assembler.cpp \
+renderer/scene/assembler/AssemblerBase.cpp \
+renderer/scene/assembler/CustomAssembler.cpp \
+renderer/scene/assembler/MaskAssembler.cpp \
+renderer/scene/assembler/RenderData.cpp \
+renderer/scene/assembler/RenderDataList.cpp \
+renderer/scene/assembler/TiledMapAssembler.cpp \
+renderer/scene/assembler/AssemblerSprite.cpp \
+renderer/scene/assembler/SimpleSprite2D.cpp \
+renderer/scene/assembler/SlicedSprite2D.cpp \
+renderer/scene/assembler/SimpleSprite3D.cpp \
+renderer/scene/assembler/SlicedSprite3D.cpp \
+renderer/scene/assembler/MeshAssembler.cpp \
+renderer/scene/assembler/Particle3DAssembler.cpp \
+renderer/scene/MeshBuffer.cpp \
+renderer/scene/ModelBatcher.cpp \
+renderer/scene/NodeProxy.cpp \
+renderer/scene/RenderFlow.cpp \
+renderer/scene/StencilManager.cpp \
+renderer/scene/MemPool.cpp \
+renderer/scene/NodeMemPool.cpp \
+renderer/scene/ParallelTask.cpp \
+renderer/memop/RecyclePool.hpp \
+renderer/renderer/EffectVariant.cpp \
+renderer/renderer/EffectBase.cpp \
 scripting/js-bindings/auto/jsb_gfx_auto.cpp \
 scripting/js-bindings/auto/jsb_renderer_auto.cpp \
 scripting/js-bindings/manual/jsb_renderer_manual.cpp \
@@ -164,17 +199,20 @@ ifeq ($(USE_SOCKET),1)
 LOCAL_SRC_FILES += \
 network/SocketIO.cpp \
 network/WebSocket-libwebsockets.cpp \
+network/WebSocketServer.cpp \
 scripting/js-bindings/manual/jsb_socketio.cpp \
-scripting/js-bindings/manual/jsb_websocket.cpp
+scripting/js-bindings/manual/jsb_websocket.cpp \
+scripting/js-bindings/manual/jsb_websocket_server.cpp
 
 LOCAL_STATIC_LIBRARIES += libwebsockets_static
 LOCAL_STATIC_LIBRARIES += cocos_ssl_static
 LOCAL_STATIC_LIBRARIES += cocos_crypto_static
+LOCAL_STATIC_LIBRARIES += uv_static
 endif # USE_SOCKET
 
 ifneq ($(USE_MIDDLEWARE),0)
 LOCAL_STATIC_LIBRARIES += editor_support_static
-endif # USE_SPINE or USE_DRAGONBONES
+endif # USE_MIDDLEWARE
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) \
                     $(LOCAL_PATH)/.. \
@@ -207,6 +245,7 @@ endif
 LOCAL_STATIC_LIBRARIES += cocos_webp_static
 LOCAL_STATIC_LIBRARIES += cocos_zlib_static
 LOCAL_STATIC_LIBRARIES += v8_static
+LOCAL_STATIC_LIBRARIES += cocos_freetype_static
 
 LOCAL_WHOLE_STATIC_LIBRARIES := cocos2dxandroid_static
 LOCAL_WHOLE_STATIC_LIBRARIES += cpufeatures 

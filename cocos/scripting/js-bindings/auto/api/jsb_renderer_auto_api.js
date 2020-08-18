@@ -9,20 +9,6 @@ var renderer = renderer || {};
 renderer.ProgramLib = {
 
 /**
- * @method getProgram
- * @param {String} arg0
- * @param {map_object} arg1
- * @return {cc.renderer::Program}
- */
-getProgram : function (
-str, 
-map 
-)
-{
-    return cc.renderer::Program;
-},
-
-/**
  * @method define
  * @param {String} arg0
  * @param {String} arg1
@@ -39,20 +25,6 @@ array
 },
 
 /**
- * @method getKey
- * @param {String} arg0
- * @param {map_object} arg1
- * @return {unsigned int}
- */
-getKey : function (
-str, 
-map 
-)
-{
-    return 0;
-},
-
-/**
  * @method ProgramLib
  * @constructor
  * @param {cc.renderer::DeviceGraphics} arg0
@@ -61,6 +33,443 @@ map
 ProgramLib : function (
 devicegraphics, 
 array 
+)
+{
+},
+
+};
+
+/**
+ * @class EffectBase
+ */
+renderer.EffectBase = {
+
+/**
+ * @method getProperty
+ * @param {String} arg0
+ * @param {int} arg1
+ * @return {cc.renderer::Technique::Parameter}
+ */
+getProperty : function (
+str, 
+int 
+)
+{
+    return cc.renderer::Technique::Parameter;
+},
+
+/**
+ * @method setStencilTest
+ * @param {bool} arg0
+ * @param {int} arg1
+ */
+setStencilTest : function (
+bool, 
+int 
+)
+{
+},
+
+/**
+ * @method getDefine
+ * @param {String} arg0
+ * @param {int} arg1
+ * @return {cc.Value}
+ */
+getDefine : function (
+str, 
+int 
+)
+{
+    return cc.Value;
+},
+
+/**
+ * @method setCullMode
+ * @param {cc.renderer::CullMode} arg0
+ * @param {int} arg1
+ */
+setCullMode : function (
+cullmode, 
+int 
+)
+{
+},
+
+/**
+ * @method setBlend
+ */
+setBlend : function (
+)
+{
+},
+
+/**
+ * @method setStencil
+ */
+setStencil : function (
+)
+{
+},
+
+/**
+ * @method getPasses
+* @return {Array|Array}
+*/
+getPasses : function(
+)
+{
+    return new Array();
+},
+
+/**
+ * @method setDepth
+ */
+setDepth : function (
+)
+{
+},
+
+/**
+ * @method define
+ * @param {String} arg0
+ * @param {cc.Value} arg1
+ * @param {int} arg2
+ */
+define : function (
+str, 
+value, 
+int 
+)
+{
+},
+
+};
+
+/**
+ * @class Effect
+ */
+renderer.EffectNative = {
+
+/**
+ * @method clear
+ */
+clear : function (
+)
+{
+},
+
+/**
+ * @method switchTechnique
+ * @param {int} arg0
+ */
+switchTechnique : function (
+int 
+)
+{
+},
+
+/**
+ * @method copy
+ * @param {cc.renderer::Effect} arg0
+ */
+copy : function (
+effect 
+)
+{
+},
+
+/**
+ * @method Effect
+ * @constructor
+ */
+Effect : function (
+)
+{
+},
+
+};
+
+/**
+ * @class EffectVariant
+ */
+renderer.EffectVariant = {
+
+/**
+ * @method setEffect
+ * @param {cc.renderer::Effect} arg0
+ */
+setEffect : function (
+effect 
+)
+{
+},
+
+/**
+ * @method updateHash
+ * @param {double} arg0
+ */
+updateHash : function (
+double 
+)
+{
+},
+
+/**
+ * @method copy
+ * @param {cc.renderer::EffectVariant} arg0
+ */
+copy : function (
+effectvariant 
+)
+{
+},
+
+/**
+ * @method getEffect
+ * @return {cc.renderer::Effect}
+ */
+getEffect : function (
+)
+{
+    return cc.renderer::Effect;
+},
+
+/**
+ * @method EffectVariant
+ * @constructor
+* @param {cc.renderer::Effect} effect
+*/
+EffectVariant : function(
+effect 
+)
+{
+},
+
+};
+
+/**
+ * @class AssemblerBase
+ */
+renderer.AssemblerBase = {
+
+/**
+ * @method disableDirty
+ * @param {unsigned int} arg0
+ */
+disableDirty : function (
+int 
+)
+{
+},
+
+/**
+ * @method reset
+ */
+reset : function (
+)
+{
+},
+
+/**
+ * @method setUseModel
+ * @param {bool} arg0
+ */
+setUseModel : function (
+bool 
+)
+{
+},
+
+/**
+ * @method isDirty
+ * @param {unsigned int} arg0
+ * @return {bool}
+ */
+isDirty : function (
+int 
+)
+{
+    return false;
+},
+
+/**
+ * @method setDirty
+ * @param {se::Object} arg0
+ */
+setDirty : function (
+object 
+)
+{
+},
+
+/**
+ * @method AssemblerBase
+ * @constructor
+ */
+AssemblerBase : function (
+)
+{
+},
+
+};
+
+/**
+ * @class MemPool
+ */
+renderer.MemPool = {
+
+/**
+ * @method removeCommonData
+ * @param {unsigned int} arg0
+ */
+removeCommonData : function (
+int 
+)
+{
+},
+
+/**
+ * @method updateCommonData
+ * @param {unsigned int} arg0
+ * @param {se::Object} arg1
+ * @param {se::Object} arg2
+ */
+updateCommonData : function (
+int, 
+object, 
+object 
+)
+{
+},
+
+/**
+ * @method MemPool
+ * @constructor
+ */
+MemPool : function (
+)
+{
+},
+
+};
+
+/**
+ * @class NodeProxy
+ */
+renderer.NodeProxy = {
+
+/**
+ * @method disableVisit
+ */
+disableVisit : function (
+)
+{
+},
+
+/**
+ * @method switchTraverseToRender
+ */
+switchTraverseToRender : function (
+)
+{
+},
+
+/**
+ * @method notifyUpdateParent
+ */
+notifyUpdateParent : function (
+)
+{
+},
+
+/**
+ * @method destroyImmediately
+ */
+destroyImmediately : function (
+)
+{
+},
+
+/**
+ * @method isValid
+ * @return {bool}
+ */
+isValid : function (
+)
+{
+    return false;
+},
+
+/**
+ * @method enableVisit
+ * @param {bool} arg0
+ */
+enableVisit : function (
+bool 
+)
+{
+},
+
+/**
+ * @method getLocalMatrix
+ * @return {mat4_object}
+ */
+getLocalMatrix : function (
+)
+{
+    return cc.Mat4;
+},
+
+/**
+ * @method setName
+ * @param {String} arg0
+ */
+setName : function (
+str 
+)
+{
+},
+
+/**
+ * @method clearAssembler
+ */
+clearAssembler : function (
+)
+{
+},
+
+/**
+ * @method switchTraverseToVisit
+ */
+switchTraverseToVisit : function (
+)
+{
+},
+
+/**
+ * @method setAssembler
+ * @param {cc.renderer::AssemblerBase} arg0
+ */
+setAssembler : function (
+assemblerbase 
+)
+{
+},
+
+/**
+ * @method NodeProxy
+ * @constructor
+ * @param {unsigned int} arg0
+ * @param {unsigned int} arg1
+ * @param {String} arg2
+ * @param {String} arg3
+ */
+NodeProxy : function (
+int, 
+int, 
+str, 
+str 
 )
 {
 },
@@ -103,42 +512,6 @@ texture2d
  * @constructor
  */
 BaseRenderer : function (
-)
-{
-},
-
-};
-
-/**
- * @class ForwardRenderer
- */
-renderer.ForwardRenderer = {
-
-/**
- * @method init
- * @param {cc.renderer::DeviceGraphics} arg0
- * @param {Array} arg1
- * @param {cc.renderer::Texture2D} arg2
- * @param {int} arg3
- * @param {int} arg4
- * @return {bool}
- */
-init : function (
-devicegraphics, 
-array, 
-texture2d, 
-int, 
-int 
-)
-{
-    return false;
-},
-
-/**
- * @method ForwardRenderer
- * @constructor
- */
-ForwardRenderer : function (
 )
 {
 },
@@ -207,6 +580,16 @@ int
 },
 
 /**
+ * @method setPriority
+ * @param {int} arg0
+ */
+setPriority : function (
+int 
+)
+{
+},
+
+/**
  * @method getOrthoHeight
  * @return {float}
  */
@@ -214,6 +597,16 @@ getOrthoHeight : function (
 )
 {
     return 0;
+},
+
+/**
+ * @method setCullingMask
+ * @param {int} arg0
+ */
+setCullingMask : function (
+int 
+)
+{
 },
 
 /**
@@ -227,13 +620,23 @@ getStencil : function (
 },
 
 /**
- * @method setFrameBuffer
- * @param {cc.renderer::FrameBuffer} arg0
+ * @method setType
+ * @param {cc.renderer::ProjectionType} arg0
  */
-setFrameBuffer : function (
-framebuffer 
+setType : function (
+projectiontype 
 )
 {
+},
+
+/**
+ * @method getPriority
+ * @return {int}
+ */
+getPriority : function (
+)
+{
+    return 0;
 },
 
 /**
@@ -242,6 +645,16 @@ framebuffer
  */
 setFar : function (
 float 
+)
+{
+},
+
+/**
+ * @method setFrameBuffer
+ * @param {cc.renderer::FrameBuffer} arg0
+ */
+setFrameBuffer : function (
+framebuffer 
 )
 {
 },
@@ -287,6 +700,16 @@ getFar : function (
  * @return {cc.renderer::ProjectionType}
  */
 getType : function (
+)
+{
+    return 0;
+},
+
+/**
+ * @method getCullingMask
+ * @return {int}
+ */
+getCullingMask : function (
 )
 {
     return 0;
@@ -410,35 +833,59 @@ Camera : function (
 };
 
 /**
- * @class Effect
+ * @class ForwardRenderer
  */
-renderer.EffectNative = {
+renderer.ForwardRenderer = {
 
 /**
- * @method setDefineValue
- * @param {String} arg0
- * @param {cc.Value} arg1
+ * @method renderCamera
+ * @param {cc.renderer::Camera} arg0
+ * @param {cc.renderer::Scene} arg1
  */
-setDefineValue : function (
-str, 
-value 
+renderCamera : function (
+camera, 
+scene 
 )
 {
 },
 
 /**
- * @method clear
+ * @method init
+ * @param {cc.renderer::DeviceGraphics} arg0
+ * @param {Array} arg1
+ * @param {cc.renderer::Texture2D} arg2
+ * @param {int} arg3
+ * @param {int} arg4
+ * @return {bool}
  */
-clear : function (
+init : function (
+devicegraphics, 
+array, 
+texture2d, 
+int, 
+int 
+)
+{
+    return false;
+},
+
+/**
+ * @method render
+ * @param {cc.renderer::Scene} arg0
+ * @param {float} arg1
+ */
+render : function (
+scene, 
+float 
 )
 {
 },
 
 /**
- * @method Effect
+ * @method ForwardRenderer
  * @constructor
  */
-Effect : function (
+ForwardRenderer : function (
 )
 {
 },
@@ -451,16 +898,6 @@ Effect : function (
 renderer.Light = {
 
 /**
- * @method getShadowScale
- * @return {float}
- */
-getShadowScale : function (
-)
-{
-    return 0;
-},
-
-/**
  * @method getRange
  * @return {float}
  */
@@ -468,6 +905,16 @@ getRange : function (
 )
 {
     return 0;
+},
+
+/**
+ * @method setShadowFrustumSize
+ * @param {float} arg0
+ */
+setShadowFrustumSize : function (
+float 
+)
+{
 },
 
 /**
@@ -531,6 +978,16 @@ getViewProjMatrix : function (
 },
 
 /**
+ * @method getPositionUniform
+ * @return {vec3_object}
+ */
+getPositionUniform : function (
+)
+{
+    return cc.Vec3;
+},
+
+/**
  * @method getShadowBias
  * @return {float}
  */
@@ -542,7 +999,7 @@ getShadowBias : function (
 
 /**
  * @method getShadowDarkness
- * @return {unsigned int}
+ * @return {float}
  */
 getShadowDarkness : function (
 )
@@ -561,6 +1018,16 @@ getSpotAngle : function (
 },
 
 /**
+ * @method getDirectionUniform
+ * @return {vec3_object}
+ */
+getDirectionUniform : function (
+)
+{
+    return cc.Vec3;
+},
+
+/**
  * @method getSpotExp
  * @return {float}
  */
@@ -568,6 +1035,16 @@ getSpotExp : function (
 )
 {
     return 0;
+},
+
+/**
+ * @method setShadowDepthScale
+ * @param {float} arg0
+ */
+setShadowDepthScale : function (
+float 
+)
+{
 },
 
 /**
@@ -588,6 +1065,16 @@ getType : function (
 )
 {
     return 0;
+},
+
+/**
+ * @method getColorUniform
+ * @return {vec3_object}
+ */
+getColorUniform : function (
+)
+{
+    return cc.Vec3;
 },
 
 /**
@@ -682,10 +1169,10 @@ devicegraphics
 
 /**
  * @method setShadowDarkness
- * @param {unsigned int} arg0
+ * @param {float} arg0
  */
 setShadowDarkness : function (
-int 
+float 
 )
 {
 },
@@ -715,16 +1202,6 @@ float
  * @param {float} arg0
  */
 setRange : function (
-float 
-)
-{
-},
-
-/**
- * @method setShadowScale
- * @param {float} arg0
- */
-setShadowScale : function (
 float 
 )
 {
@@ -765,20 +1242,30 @@ int
 },
 
 /**
- * @method getShadowType
- * @return {cc.renderer::Light::ShadowType}
+ * @method getShadowResolution
+ * @return {unsigned int}
  */
-getShadowType : function (
+getShadowResolution : function (
 )
 {
     return 0;
 },
 
 /**
- * @method getShadowResolution
- * @return {unsigned int}
+ * @method getShadowDepthScale
+ * @return {float}
  */
-getShadowResolution : function (
+getShadowDepthScale : function (
+)
+{
+    return 0;
+},
+
+/**
+ * @method getShadowType
+ * @return {cc.renderer::Light::ShadowType}
+ */
+getShadowType : function (
 )
 {
     return 0;
@@ -806,115 +1293,9 @@ Light : function (
 };
 
 /**
- * @class Pass
- */
-renderer.PassNative = {
-
-/**
- * @method getStencilTest
- * @return {bool}
- */
-getStencilTest : function (
-)
-{
-    return false;
-},
-
-/**
- * @method setStencilBack
- */
-setStencilBack : function (
-)
-{
-},
-
-/**
- * @method setStencilTest
- * @param {bool} arg0
- */
-setStencilTest : function (
-bool 
-)
-{
-},
-
-/**
- * @method setCullMode
- * @param {cc.renderer::CullMode} arg0
- */
-setCullMode : function (
-cullmode 
-)
-{
-},
-
-/**
- * @method setBlend
- */
-setBlend : function (
-)
-{
-},
-
-/**
- * @method setProgramName
- * @param {String} arg0
- */
-setProgramName : function (
-str 
-)
-{
-},
-
-/**
- * @method disableStencilTest
- */
-disableStencilTest : function (
-)
-{
-},
-
-/**
- * @method setStencilFront
- */
-setStencilFront : function (
-)
-{
-},
-
-/**
- * @method setDepth
- */
-setDepth : function (
-)
-{
-},
-
-/**
- * @method Pass
- * @constructor
-* @param {String} str
-*/
-Pass : function(
-str 
-)
-{
-},
-
-};
-
-/**
  * @class Scene
  */
 renderer.Scene = {
-
-/**
- * @method reset
- */
-reset : function (
-)
-{
-},
 
 /**
  * @method getCameraCount
@@ -924,16 +1305,6 @@ getCameraCount : function (
 )
 {
     return 0;
-},
-
-/**
- * @method addCamera
- * @param {cc.renderer::Camera} arg0
- */
-addCamera : function (
-camera 
-)
-{
 },
 
 /**
@@ -957,15 +1328,43 @@ getLightCount : function (
 },
 
 /**
- * @method getCamera
- * @param {unsigned int} arg0
- * @return {cc.renderer::Camera}
+ * @method removeView
+ * @param {cc.renderer::View} arg0
  */
-getCamera : function (
-int 
+removeView : function (
+view 
 )
 {
-    return cc.renderer::Camera;
+},
+
+/**
+ * @method getLights
+ * @return {Array}
+ */
+getLights : function (
+)
+{
+    return new Array();
+},
+
+/**
+ * @method removeLight
+ * @param {cc.renderer::Light} arg0
+ */
+removeLight : function (
+light 
+)
+{
+},
+
+/**
+ * @method addCamera
+ * @param {cc.renderer::Camera} arg0
+ */
+addCamera : function (
+camera 
+)
+{
 },
 
 /**
@@ -981,6 +1380,16 @@ int
 },
 
 /**
+ * @method addLight
+ * @param {cc.renderer::Light} arg0
+ */
+addLight : function (
+light 
+)
+{
+},
+
+/**
  * @method getCameras
  * @return {Array}
  */
@@ -991,11 +1400,9 @@ getCameras : function (
 },
 
 /**
- * @method addView
- * @param {cc.renderer::View} arg0
+ * @method sortCameras
  */
-addView : function (
-view 
+sortCameras : function (
 )
 {
 },
@@ -1011,31 +1418,31 @@ camera
 },
 
 /**
- * @method removeView
+ * @method reset
+ */
+reset : function (
+)
+{
+},
+
+/**
+ * @method getCamera
+ * @param {unsigned int} arg0
+ * @return {cc.renderer::Camera}
+ */
+getCamera : function (
+int 
+)
+{
+    return cc.renderer::Camera;
+},
+
+/**
+ * @method addView
  * @param {cc.renderer::View} arg0
  */
-removeView : function (
+addView : function (
 view 
-)
-{
-},
-
-/**
- * @method addLight
- * @param {cc.renderer::Light} arg0
- */
-addLight : function (
-light 
-)
-{
-},
-
-/**
- * @method removeLight
- * @param {cc.renderer::Light} arg0
- */
-removeLight : function (
-light 
 )
 {
 },
@@ -1045,6 +1452,594 @@ light
  * @constructor
  */
 Scene : function (
+)
+{
+},
+
+};
+
+/**
+ * @class NodeMemPool
+ */
+renderer.NodeMemPool = {
+
+/**
+ * @method removeNodeData
+ * @param {unsigned int} arg0
+ */
+removeNodeData : function (
+int 
+)
+{
+},
+
+/**
+ * @method updateNodeData
+ * @param {unsigned int} arg0
+ * @param {se::Object} arg1
+ * @param {se::Object} arg2
+ * @param {se::Object} arg3
+ * @param {se::Object} arg4
+ * @param {se::Object} arg5
+ * @param {se::Object} arg6
+ * @param {se::Object} arg7
+ * @param {se::Object} arg8
+ * @param {se::Object} arg9
+ * @param {se::Object} arg10
+ * @param {se::Object} arg11
+ */
+updateNodeData : function (
+int, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object, 
+object 
+)
+{
+},
+
+/**
+ * @method NodeMemPool
+ * @constructor
+ */
+NodeMemPool : function (
+)
+{
+},
+
+};
+
+/**
+ * @class RenderDataList
+ */
+renderer.RenderDataList = {
+
+/**
+ * @method updateMesh
+ * @param {unsigned int} arg0
+ * @param {se::Object} arg1
+ * @param {se::Object} arg2
+ */
+updateMesh : function (
+int, 
+object, 
+object 
+)
+{
+},
+
+/**
+ * @method clear
+ */
+clear : function (
+)
+{
+},
+
+/**
+ * @method RenderDataList
+ * @constructor
+ */
+RenderDataList : function (
+)
+{
+},
+
+};
+
+/**
+ * @class Assembler
+ */
+renderer.Assembler = {
+
+/**
+ * @method setVertexFormat
+ * @param {cc.renderer::VertexFormat} arg0
+ */
+setVertexFormat : function (
+vertexformat 
+)
+{
+},
+
+/**
+ * @method isIgnoreOpacityFlag
+ * @return {bool}
+ */
+isIgnoreOpacityFlag : function (
+)
+{
+    return false;
+},
+
+/**
+ * @method ignoreWorldMatrix
+ */
+ignoreWorldMatrix : function (
+)
+{
+},
+
+/**
+ * @method updateVerticesRange
+ * @param {unsigned int} arg0
+ * @param {int} arg1
+ * @param {int} arg2
+ */
+updateVerticesRange : function (
+int, 
+int, 
+int 
+)
+{
+},
+
+/**
+ * @method setRenderDataList
+ * @param {cc.renderer::RenderDataList} arg0
+ */
+setRenderDataList : function (
+renderdatalist 
+)
+{
+},
+
+/**
+ * @method updateMeshIndex
+ * @param {unsigned int} arg0
+ * @param {int} arg1
+ */
+updateMeshIndex : function (
+int, 
+int 
+)
+{
+},
+
+/**
+ * @method updateEffect
+ * @param {unsigned int} arg0
+ * @param {cc.renderer::EffectVariant} arg1
+ */
+updateEffect : function (
+int, 
+effectvariant 
+)
+{
+},
+
+/**
+ * @method updateIndicesRange
+ * @param {unsigned int} arg0
+ * @param {int} arg1
+ * @param {int} arg2
+ */
+updateIndicesRange : function (
+int, 
+int, 
+int 
+)
+{
+},
+
+/**
+ * @method ignoreOpacityFlag
+ */
+ignoreOpacityFlag : function (
+)
+{
+},
+
+/**
+ * @method Assembler
+ * @constructor
+ */
+Assembler : function (
+)
+{
+},
+
+};
+
+/**
+ * @class CustomAssembler
+ */
+renderer.CustomAssembler = {
+
+/**
+ * @method clearEffect
+ */
+clearEffect : function (
+)
+{
+},
+
+/**
+ * @method updateEffect
+ * @param {unsigned int} arg0
+ * @param {cc.renderer::EffectVariant} arg1
+ */
+updateEffect : function (
+int, 
+effectvariant 
+)
+{
+},
+
+/**
+ * @method updateIABuffer
+ * @param {unsigned int} arg0
+ * @param {cc.renderer::VertexBuffer} arg1
+ * @param {cc.renderer::IndexBuffer} arg2
+ */
+updateIABuffer : function (
+int, 
+vertexbuffer, 
+indexbuffer 
+)
+{
+},
+
+/**
+ * @method CustomAssembler
+ * @constructor
+ */
+CustomAssembler : function (
+)
+{
+},
+
+};
+
+/**
+ * @class RenderFlow
+ */
+renderer.RenderFlow = {
+
+/**
+ * @method render
+ * @param {cc.renderer::NodeProxy} arg0
+ * @param {float} arg1
+ * @param {cc.renderer::Camera} arg2
+ */
+render : function (
+nodeproxy, 
+float, 
+camera 
+)
+{
+},
+
+/**
+ * @method RenderFlow
+ * @constructor
+ * @param {cc.renderer::DeviceGraphics} arg0
+ * @param {cc.renderer::Scene} arg1
+ * @param {cc.renderer::ForwardRenderer} arg2
+ */
+RenderFlow : function (
+devicegraphics, 
+scene, 
+forwardrenderer 
+)
+{
+},
+
+};
+
+/**
+ * @class AssemblerSprite
+ */
+renderer.AssemblerSprite = {
+
+/**
+ * @method setLocalData
+ * @param {se::Object} arg0
+ */
+setLocalData : function (
+object 
+)
+{
+},
+
+/**
+ * @method AssemblerSprite
+ * @constructor
+ */
+AssemblerSprite : function (
+)
+{
+},
+
+};
+
+/**
+ * @class SimpleSprite2D
+ */
+renderer.SimpleSprite2D = {
+
+/**
+ * @method SimpleSprite2D
+ * @constructor
+ */
+SimpleSprite2D : function (
+)
+{
+},
+
+};
+
+/**
+ * @class MaskAssembler
+ */
+renderer.MaskAssembler = {
+
+/**
+ * @method setMaskInverted
+ * @param {bool} arg0
+ */
+setMaskInverted : function (
+bool 
+)
+{
+},
+
+/**
+ * @method setImageStencil
+ * @param {bool} arg0
+ */
+setImageStencil : function (
+bool 
+)
+{
+},
+
+/**
+ * @method setClearSubHandle
+ * @param {cc.renderer::Assembler} arg0
+ */
+setClearSubHandle : function (
+assembler 
+)
+{
+},
+
+/**
+ * @method getMaskInverted
+ * @return {bool}
+ */
+getMaskInverted : function (
+)
+{
+    return false;
+},
+
+/**
+ * @method setRenderSubHandle
+ * @param {cc.renderer::Assembler} arg0
+ */
+setRenderSubHandle : function (
+assembler 
+)
+{
+},
+
+/**
+ * @method MaskAssembler
+ * @constructor
+ */
+MaskAssembler : function (
+)
+{
+},
+
+};
+
+/**
+ * @class TiledMapAssembler
+ */
+renderer.TiledMapAssembler = {
+
+/**
+ * @method updateNodes
+ * @param {unsigned int} arg0
+ * @param {Array} arg1
+ */
+updateNodes : function (
+int, 
+array 
+)
+{
+},
+
+/**
+ * @method clearNodes
+ * @param {unsigned int} arg0
+ */
+clearNodes : function (
+int 
+)
+{
+},
+
+/**
+ * @method TiledMapAssembler
+ * @constructor
+ */
+TiledMapAssembler : function (
+)
+{
+},
+
+};
+
+/**
+ * @class SlicedSprite2D
+ */
+renderer.SlicedSprite2D = {
+
+/**
+ * @method SlicedSprite2D
+ * @constructor
+ */
+SlicedSprite2D : function (
+)
+{
+},
+
+};
+
+/**
+ * @class MeshAssembler
+ */
+renderer.MeshAssembler = {
+
+/**
+ * @method setNode
+ * @param {cc.renderer::NodeProxy} arg0
+ */
+setNode : function (
+nodeproxy 
+)
+{
+},
+
+/**
+ * @method updateIAData
+ * @param {unsigned int} arg0
+ * @param {cc.renderer::VertexFormat} arg1
+ * @param {se::Object} arg2
+ * @param {se::Object} arg3
+ */
+updateIAData : function (
+int, 
+vertexformat, 
+object, 
+object 
+)
+{
+},
+
+/**
+ * @method MeshAssembler
+ * @constructor
+ */
+MeshAssembler : function (
+)
+{
+},
+
+};
+
+/**
+ * @class SimpleSprite3D
+ */
+renderer.SimpleSprite3D = {
+
+/**
+ * @method SimpleSprite3D
+ * @constructor
+ */
+SimpleSprite3D : function (
+)
+{
+},
+
+};
+
+/**
+ * @class SlicedSprite3D
+ */
+renderer.SlicedSprite3D = {
+
+/**
+ * @method SlicedSprite3D
+ * @constructor
+ */
+SlicedSprite3D : function (
+)
+{
+},
+
+};
+
+/**
+ * @class Particle3DAssembler
+ */
+renderer.Particle3DAssembler = {
+
+/**
+ * @method setTrailSpace
+ * @param {cc.renderer::Space} arg0
+ */
+setTrailSpace : function (
+space 
+)
+{
+},
+
+/**
+ * @method setTrailVertexFormat
+ * @param {cc.renderer::VertexFormat} arg0
+ */
+setTrailVertexFormat : function (
+vertexformat 
+)
+{
+},
+
+/**
+ * @method setParticleSpace
+ * @param {cc.renderer::Space} arg0
+ */
+setParticleSpace : function (
+space 
+)
+{
+},
+
+/**
+ * @method setTrailModuleEnable
+ * @param {bool} arg0
+ */
+setTrailModuleEnable : function (
+bool 
+)
+{
+},
+
+/**
+ * @method Particle3DAssembler
+ * @constructor
+ */
+Particle3DAssembler : function (
 )
 {
 },

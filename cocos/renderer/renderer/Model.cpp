@@ -25,6 +25,9 @@
 #include "Model.h"
 #include "Effect.h"
 #include "InputAssembler.h"
+#include "../scene/NodeProxy.hpp"
+#include "../gfx/VertexBuffer.h"
+#include "math/MathUtil.h"
 
 RENDERER_BEGIN
 
@@ -61,78 +64,59 @@ void ModelPool::returnModel(Model *model)
 
 Model::Model()
 {
-//    RENDERER_LOGD("Model construction %p", this);
-    
-    _inputAssemblers.reserve(500);
 }
 
 Model::~Model()
 {
-    RENDERER_LOGD("Model destruction %p", this);
     reset();
-    
-    ccCArrayFree(_effects);
 }
 
-void Model::addInputAssembler(const InputAssembler& ia)
+void Model::setInputAssembler(const InputAssembler& ia)
 {
-    _inputAssemblers.push_back(std::move(ia));
+    _inputAssembler = ia;
 }
 
-void Model::clearInputAssemblers()
+void Model::setEffect(EffectVariant* effect)
 {
-    _inputAssemblers.clear();
+    if (_effect != effect)
+    {
+        CC_SAFE_RELEASE(_effect);
+        _effect = effect;
+        CC_SAFE_RETAIN(_effect);
+    }
 }
 
-void Model::addEffect(Effect* effect)
+void Model::setNode(NodeProxy* node)
 {
-    if (ccCArrayContainsValue(_effects, effect))
-        return;
-    
-    ccCArrayAppendValue(_effects, effect);
-    
-    _defines.push_back(effect->extractDefines());
+    if (_node != node)
+    {
+        CC_SAFE_RELEASE(_node);
+        _node = node;
+        CC_SAFE_RETAIN(_node);
+    }
 }
 
-void Model::clearEffects()
-{
-    ccCArrayRemoveAllValues(_effects);
-    _defines.clear();
-}
-
-void Model::extractDrawItem(DrawItem& out, uint32_t index) const
+void Model::extractDrawItem(DrawItem& out) const
 {
     if (_dynamicIA)
     {
         out.model = const_cast<Model*>(this);
         out.ia = nullptr;
-        out.effect = static_cast<Effect*>(_effects->arr[0]);
-        out.defines = out.effect->extractDefines();
-        
+        out.effect = _effect;
+
         return;
     }
     
-    if (index >= _inputAssemblers.size())
-        return;
-    
     out.model = const_cast<Model*>(this);
-    out.ia = const_cast<InputAssembler*>(&(_inputAssemblers[index]));
-    
-    auto effectsSize = _effects->num;
-    if (index >= effectsSize)
-        index = (uint32_t)(effectsSize - 1);
-    
-    out.effect = static_cast<Effect*>(_effects->arr[index]);
-
-    out.defines = out.effect->extractDefines();
+    out.ia = const_cast<InputAssembler*>(&_inputAssembler);
+    out.effect = _effect;
 }
 
 void Model::reset()
 {
-    ccCArrayRemoveAllValues(_effects);
-    _inputAssemblers.clear();
-    
-    _defines.clear();
+    CC_SAFE_RELEASE_NULL(_effect);
+    CC_SAFE_RELEASE_NULL(_node);
+    _inputAssembler.clear();
 }
 
 RENDERER_END

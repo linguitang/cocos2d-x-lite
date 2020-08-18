@@ -26,7 +26,7 @@
 #pragma once
 
 #include "scripting/js-bindings/jswrapper/SeApi.h"
-
+#include "2d/CCTTFLabelRenderer.h"
 #include <typeinfo>
 
 class JSBClassType
@@ -44,7 +44,7 @@ public:
     }
 
     template<typename T>
-    static se::Class* findClass(T* nativeObj)
+    static se::Class* findClass(const T* nativeObj)
     {
         bool found = false;
         std::string typeName = typeid(*nativeObj).name();
